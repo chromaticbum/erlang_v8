@@ -1,0 +1,3 @@
+[submodule "c_src/v8"]
+	path = c_src/v8
+	url = git://github.com/v8/v8.git
