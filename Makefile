@@ -1,6 +1,6 @@
 all: compile
 
-compile: rebar_compile
+compile: clean rebar_compile
 	
 rebar_compile:
 	./rebar compile

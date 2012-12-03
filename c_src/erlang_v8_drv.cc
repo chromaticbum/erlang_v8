@@ -1,8 +1,9 @@
 #include "erlang_v8_drv.h"
+#include <string.h>
 
-static ErlNifResourceType *VmResource;
-static ErlNifResourceType *VmContextResource;
-static ErlNifResourceType *JsWrapperResource;
+ErlNifResourceType *JsWrapperResource;
+ErlNifResourceType *VmResource;
+ErlNifResourceType *VmContextResource;
 
 static ERL_NIF_TERM NewVm(ErlNifEnv *env,
     int argc,
@@ -11,18 +12,15 @@ static ERL_NIF_TERM NewVm(ErlNifEnv *env,
 
   if(enif_get_local_pid(env, argv[0], &server)) {
     Vm *vm = new Vm(server);
-    ErlVm *erlVm = (ErlVm *)enif_alloc_resource(VmResource, sizeof(ErlVm));
-    erlVm->vm = vm;
-    ERL_NIF_TERM term = enif_make_resource(env, erlVm);
-    enif_release_resource(erlVm);
 
-    return term;
+    return vm->MakeTerm(env);
   } else {
     return enif_make_badarg(env);
   }
 }
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
+  TRACE("VmDestroy\n");
   Vm *vm = (Vm *)obj;
 
   delete vm;
@@ -36,30 +34,52 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
     Vm *vm = erlVm->vm;
-    TRACE("NewContext: Creating\n");
-    VmContext *vmContext = new VmContext(vm);
-    TRACE("NewContext: Done creating\n");
-    ErlVmContext *erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
-    erlVmContext->vmContext = vmContext;
-    ERL_NIF_TERM term = enif_make_resource(env, erlVmContext);
-    enif_release_resource(erlVmContext);
+    VmContext *vmContext = vm->CreateVmContext();
 
-    return term;
+    return vmContext->MakeTerm(env);
   } else {
     return enif_make_badarg(env);
   }
 }
 
 static void VmContextDestroy(ErlNifEnv *env, void *obj) {
+  TRACE("VmContextDestroy\n");
   Vm *vm = (Vm *)obj;
 
   delete vm;
 }
 
 static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
+  TRACE("JsWrapperDestroy\n");
   JsWrapper *jsWrapper = (JsWrapper *)obj;
 
   delete jsWrapper;
+}
+
+static ERL_NIF_TERM Execute(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlVmContext *erlVmContext;
+
+  if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
+    VmContext *vmContext = erlVmContext->vmContext;
+    ErlNifBinary binary;
+
+    if(enif_inspect_iolist_as_binary(env, argv[0], &binary)) {
+      char *script = (char *)malloc((binary.size + 1) * sizeof(char));
+      memcpy(script, binary.data, binary.size);
+      script[binary.size] = NULL;
+
+      Persistent<Value> jsValue = vmContext->Execute(script);
+      JsWrapper *jsWrapper = new JsWrapper(vmContext, jsValue);
+
+      return jsWrapper->MakeTerm(env);
+    } else {
+      return enif_make_badarg(env);
+    }
+  } else {
+    return enif_make_badarg(env);
+  }
 }
 
 static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
@@ -72,7 +92,8 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 1, NewVm},
-  {"new_context", 1, NewContext}
+  {"new_context", 1, NewContext},
+  {"execute", 2, Execute}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)
