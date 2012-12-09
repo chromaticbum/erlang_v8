@@ -96,9 +96,13 @@ ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env) {
     memcpy(buffer, *ascii, strlen(*ascii));
 
     return MakeTerm(env, "js_string", binary);
-  } else {
-    // Must be an external
-
+  } else if(value->IsExternal()) {
     return MakeTerm(env, "js_external");
+  } else if(value->IsNull()) {
+    return MakeTerm(env, "js_null");
+  } else {
+    // Must be undefined
+
+    return MakeTerm(env, "js_undefined");
   }
 }
