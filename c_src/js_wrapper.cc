@@ -17,7 +17,7 @@ JsWrapper::~JsWrapper() {
   enif_release_resource(vmContext->erlVmContext);
 }
 
-bool JsWrapper::Define(char *field, ERL_NIF_TERM term) {
+bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
   LHCS(vmContext);
 
   if(value->IsObject()) {

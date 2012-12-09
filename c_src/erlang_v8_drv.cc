@@ -72,7 +72,7 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
   }
 }
 
-static ERL_NIF_TERM Define(ErlNifEnv *env,
+static ERL_NIF_TERM SetField(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
   ErlJsWrapper *erlJsWrapper;
@@ -85,7 +85,7 @@ static ERL_NIF_TERM Define(ErlNifEnv *env,
       memcpy(field, binary.data, binary.size);
       field[binary.size] = NULL;
 
-      if(erlJsWrapper->jsWrapper->Define(field, argv[3])) {
+      if(erlJsWrapper->jsWrapper->Set(field, argv[3])) {
         return enif_make_atom(env, "ok");
       } else {
         return enif_make_badarg(env);
@@ -110,7 +110,7 @@ static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
   {"new_context", 1, NewContext},
   {"execute", 3, Execute},
-  {"define", 3, Define}
+  {"set_field", 3, SetField}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)

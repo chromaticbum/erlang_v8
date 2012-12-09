@@ -6,7 +6,7 @@
   new_vm/0,
   new_context/1,
   execute/3,
-  define/3
+  set_field/3
   ]).
 
 init() ->
@@ -25,5 +25,5 @@ new_context(_Vm) ->
 execute(_Ctx, _Pid, _Js) ->
   error(not_loaded).
 
-define(_JsWrapper, _Field, _Term) ->
+set_field(_JsWrapper, _Field, _Term) ->
   error(not_loaded).

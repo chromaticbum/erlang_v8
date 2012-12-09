@@ -97,7 +97,7 @@ class JsWrapper {
     JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
     ~JsWrapper();
 
-    bool Define(char *field, ERL_NIF_TERM term);
+    bool Set(char *field, ERL_NIF_TERM term);
 
     ERL_NIF_TERM MakeTerm();
     ERL_NIF_TERM MakeTerm(string type);
