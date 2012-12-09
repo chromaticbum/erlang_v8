@@ -1,5 +1,6 @@
 #include <v8.h>
 #include "erlang/erl_nif.h"
+#include <string.h>
 
 using namespace v8;
 
@@ -31,14 +32,23 @@ typedef struct {
   JsWrapper *jsWrapper;
 } ErlJsWrapper;
 
+typedef enum {
+  SCRIPT
+} JsCallType;
+
+typedef struct {
+  ErlNifPid pid;
+  JsCallType type;
+  void *data;
+} JsCall;
+
 class Vm {
   public:
     ErlVm *erlVm;
-    ErlNifPid server;
     Isolate *isolate;
     Persistent<Context> context;
 
-    Vm(ErlNifPid _server);
+    Vm();
     ~Vm();
 
     VmContext *CreateVmContext();
@@ -49,22 +59,34 @@ class VmContext {
   public:
     Vm *vm;
     Persistent<Context> context;
+    ErlNifEnv *env;
     ErlVmContext *erlVmContext;
+    ErlNifTid tid;
+    ErlNifCond *cond;
+    ErlNifMutex *mutex;
+    JsCall *jsCall;
 
     VmContext(Vm *_vm);
     ~VmContext();
 
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
-    Persistent<Value> Execute(char *script);
+    int Run();
+    void RunLoop();
+    Persistent<Value> Poll();
+    int Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    void PostResult(JsCall *call, Persistent<Value> result);
+    void ResetJsCall();
+
+    void ExecuteScript(JsCall *jsCall);
 };
 
 class JsWrapper {
   public:
     VmContext *vmContext;
-    Handle<Value> value;
+    Persistent<Value> value;
     ErlJsWrapper *erlJsWrapper;
 
-    JsWrapper(VmContext *_vmContext, Handle<Value> _value);
+    JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
     ~JsWrapper();
 
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);

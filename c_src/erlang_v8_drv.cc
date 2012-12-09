@@ -8,15 +8,9 @@ ErlNifResourceType *VmContextResource;
 static ERL_NIF_TERM NewVm(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
-  ErlNifPid server;
+  Vm *vm = new Vm();
 
-  if(enif_get_local_pid(env, argv[0], &server)) {
-    Vm *vm = new Vm(server);
-
-    return vm->MakeTerm(env);
-  } else {
-    return enif_make_badarg(env);
-  }
+  return vm->MakeTerm(env);
 }
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
@@ -34,6 +28,7 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
     Vm *vm = erlVm->vm;
+
     VmContext *vmContext = vm->CreateVmContext();
 
     return vmContext->MakeTerm(env);
@@ -63,17 +58,13 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
 
   if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
     VmContext *vmContext = erlVmContext->vmContext;
-    ErlNifBinary binary;
-
-    if(enif_inspect_iolist_as_binary(env, argv[0], &binary)) {
-      char *script = (char *)malloc((binary.size + 1) * sizeof(char));
-      memcpy(script, binary.data, binary.size);
-      script[binary.size] = NULL;
-
-      Persistent<Value> jsValue = vmContext->Execute(script);
-      JsWrapper *jsWrapper = new JsWrapper(vmContext, jsValue);
-
-      return jsWrapper->MakeTerm(env);
+    ErlNifPid pid;
+    if(enif_get_local_pid(env, argv[1], &pid)) {
+      if(vmContext->Send(env, pid, argv[2])) {
+        return enif_make_atom(env, "ok");
+      } else {
+        return enif_make_badarg(env);
+      }
     } else {
       return enif_make_badarg(env);
     }
@@ -91,9 +82,9 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 };
 
 static ErlNifFunc nif_funcs[] = {
-  {"new_vm", 1, NewVm},
+  {"new_vm", 0, NewVm},
   {"new_context", 1, NewContext},
-  {"execute", 2, Execute}
+  {"execute", 3, Execute}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)

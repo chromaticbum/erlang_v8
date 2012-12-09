@@ -3,9 +3,9 @@
 
 -export([
   init/0,
-  new_vm/1,
+  new_vm/0,
   new_context/1,
-  execute/2
+  execute/3
   ]).
 
 init() ->
@@ -15,13 +15,13 @@ init() ->
       erlang:load_nif(filename:join([Filename, "erlang_v8_drv"]), 0)
   end.
 
-new_vm(_Pid) ->
+new_vm() ->
   error(not_loaded).
 
 new_context(_Vm) ->
   error(not_loaded).
 
-execute(_Ctx, _Js) ->
+execute(_Ctx, _Pid, _Js) ->
   error(not_loaded).
 
 -ifdef(TEST).

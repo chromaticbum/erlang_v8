@@ -1,7 +1,6 @@
 #include "erlang_v8_drv.h"
 
-Vm::Vm(ErlNifPid _server) {
-  server = _server;
+Vm::Vm() {
   isolate = Isolate::New();
 
   erlVm = (ErlVm *) enif_alloc_resource(VmResource, sizeof(ErlVm));
