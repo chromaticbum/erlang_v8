@@ -8,13 +8,16 @@ ErlNifResourceType *VmContextResource;
 static ERL_NIF_TERM NewVm(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
-  Vm *vm = new Vm();
+  Vm *vm = new Vm(env);
 
-  return vm->MakeTerm(env);
+  return vm->term;
 }
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
   TRACE("VmDestroy\n");
+  ErlVm *erlVm = (ErlVm *)obj;
+
+  delete erlVm->vm;
 }
 
 static ERL_NIF_TERM NewContext(ErlNifEnv *env,

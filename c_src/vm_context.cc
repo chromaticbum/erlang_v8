@@ -29,14 +29,15 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *_env) {
 }
 
 VmContext::~VmContext() {
+  Stop();
   Locker locker(vm->isolate);
   Isolate::Scope iscope(vm->isolate);
   context.Dispose();
   context.Clear();
 
   enif_release_resource(vm->erlVm);
-  //enif_cond_destroy(cond);
-  //enif_mutex_destroy(mutex);
+  enif_cond_destroy(cond);
+  enif_mutex_destroy(mutex);
 }
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
@@ -44,7 +45,7 @@ ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
   return enif_make_resource(env, erlVmContext);
 }
 
-int VmContext::Run() {
+bool VmContext::Run() {
   int thread = enif_thread_create(
       (char *)"VmContext::Run",
       &tid,
@@ -53,10 +54,20 @@ int VmContext::Run() {
       NULL);
 
   if(thread == 0) {
-    return 1;
+    return true;
   } else {
-    return 0;
+    return false;
   }
+}
+
+void VmContext::Stop() {
+  TRACE("VmContext::Stop\n");
+  jsCall = (JsCall *)malloc(sizeof(JsCall));
+  jsCall->type = EXIT;
+  enif_cond_broadcast(cond);
+
+  void *result;
+  enif_thread_join(tid, &result);
 }
 
 void VmContext::PostResult(JsCall *jsCall, Persistent<Value> result) {
@@ -70,17 +81,26 @@ void VmContext::PostResult(JsCall *jsCall, Persistent<Value> result) {
   enif_send(NULL, &(jsCall->pid), env, term);
 }
 
-void VmContext::ExecuteScript(JsCall *jsCall) {
+void VmContext::ExecuteScript() {
   LHCS(this);
   char *sourceBuffer = (char *)jsCall->data;
   Handle<String> source = String::New(sourceBuffer);
   Handle<Script> script = Script::Compile(source);
   Persistent<Value> result = Persistent<Value>::New(script->Run());
   PostResult(jsCall, result);
+  ResetJsCall();
 }
 
 void VmContext::ResetJsCall() {
-  jsCall = NULL;
+  if(jsCall) {
+    free(jsCall);
+    jsCall = NULL;
+  }
+}
+
+void VmContext::Exit() {
+  ResetJsCall();
+  enif_thread_exit(NULL);
 }
 
 Persistent<Value> VmContext::Poll() {
@@ -90,11 +110,13 @@ Persistent<Value> VmContext::Poll() {
   }
   enif_mutex_unlock(mutex);
 
-  JsCall *jsCall2 = jsCall;
-  ResetJsCall();
-  switch(jsCall2->type) {
+  switch(jsCall->type) {
     case SCRIPT:
-      ExecuteScript(jsCall2);
+      ExecuteScript();
+      break;
+    case EXIT:
+      Exit();
+      break;
   }
 
   return Poll();

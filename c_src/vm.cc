@@ -1,20 +1,19 @@
 #include "erlang_v8_drv.h"
 
-Vm::Vm() {
+Vm::Vm(ErlNifEnv *_env) {
+  env = _env;
+
   isolate = Isolate::New();
 
   erlVm = (ErlVm *) enif_alloc_resource(VmResource, sizeof(ErlVm));
   erlVm->vm = this;
+  term = enif_make_resource(env, erlVm);
+  enif_release_resource(erlVm);
 }
 
 Vm::~Vm() {
-  enif_release_resource(erlVm);
 }
 
 VmContext *Vm::CreateVmContext(ErlNifEnv *env) {
   return new VmContext(this, env);
-}
-
-ERL_NIF_TERM Vm::MakeTerm(ErlNifEnv *env) {
-  return enif_make_resource(env, erlVm);
 }

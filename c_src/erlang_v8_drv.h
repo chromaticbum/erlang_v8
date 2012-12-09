@@ -35,6 +35,7 @@ typedef struct {
 } ErlJsWrapper;
 
 typedef enum {
+  EXIT,
   SCRIPT
 } JsCallType;
 
@@ -46,15 +47,16 @@ typedef struct {
 
 class Vm {
   public:
+    ErlNifEnv *env;
     ErlVm *erlVm;
+    ERL_NIF_TERM term;
     Isolate *isolate;
     Persistent<Context> context;
 
-    Vm();
+    Vm(ErlNifEnv *_env);
     ~Vm();
 
     VmContext *CreateVmContext(ErlNifEnv *env);
-    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
 };
 
 class VmContext {
@@ -73,14 +75,16 @@ class VmContext {
     ~VmContext();
 
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
-    int Run();
+    bool Run();
+    void Stop();
+    void Exit();
     void RunLoop();
     Persistent<Value> Poll();
     bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     void PostResult(JsCall *call, Persistent<Value> result);
     void ResetJsCall();
 
-    void ExecuteScript(JsCall *jsCall);
+    void ExecuteScript();
 };
 
 class JsWrapper {
