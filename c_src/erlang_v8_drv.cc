@@ -72,6 +72,32 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
   }
 }
 
+static ERL_NIF_TERM Define(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlJsWrapper *erlJsWrapper;
+
+  if(enif_get_resource(env, argv[0], JsWrapperResource, (void **)(&erlJsWrapper))) {
+    ErlNifBinary binary;
+
+    if(enif_inspect_binary(env, argv[1], &binary)) {
+      char *field = (char *)malloc((binary.size + 1) * sizeof(char));
+      memcpy(field, binary.data, binary.size);
+      field[binary.size] = NULL;
+
+      if(erlJsWrapper->jsWrapper->Define(field, argv[3])) {
+        return enif_make_atom(env, "ok");
+      } else {
+        return enif_make_badarg(env);
+      }
+    } else {
+      return enif_make_badarg(env);
+    }
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
 static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
   VmResource = enif_open_resource_type(env, NULL, "erlang_v8_VmResource", VmDestroy, (ErlNifResourceFlags) (ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER), NULL);
   VmContextResource = enif_open_resource_type(env, NULL, "erlang_v8_VmContextResource", VmContextDestroy, (ErlNifResourceFlags) (ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER), NULL);
@@ -83,7 +109,8 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
   {"new_context", 1, NewContext},
-  {"execute", 3, Execute}
+  {"execute", 3, Execute},
+  {"define", 3, Define}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)

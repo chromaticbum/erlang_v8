@@ -75,7 +75,7 @@ class VmContext {
     int Run();
     void RunLoop();
     Persistent<Value> Poll();
-    int Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     void PostResult(JsCall *call, Persistent<Value> result);
     void ResetJsCall();
 
@@ -91,8 +91,19 @@ class JsWrapper {
     JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
     ~JsWrapper();
 
+    bool Define(char *field, ERL_NIF_TERM term);
+
     ERL_NIF_TERM MakeResourceTerm(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term);
+};
+
+class ErlWrapper {
+  public:
+    VmContext *vmContext;
+    ERL_NIF_TERM term;
+
+    ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM term);
+    ~ErlWrapper();
 };

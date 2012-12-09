@@ -5,7 +5,8 @@
   init/0,
   new_vm/0,
   new_context/1,
-  execute/3
+  execute/3,
+  define/3
   ]).
 
 init() ->
@@ -22,6 +23,9 @@ new_context(_Vm) ->
   error(not_loaded).
 
 execute(_Ctx, _Pid, _Js) ->
+  error(not_loaded).
+
+define(_JsWrapper, _Field, _Term) ->
   error(not_loaded).
 
 -ifdef(TEST).

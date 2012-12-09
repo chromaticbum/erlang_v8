@@ -14,6 +14,19 @@ JsWrapper::~JsWrapper() {
   enif_release_resource(erlJsWrapper);
 }
 
+bool JsWrapper::Define(char *field, ERL_NIF_TERM term) {
+  LHCS(vmContext);
+
+  if(value->IsObject()) {
+    Handle<Object> object = value->ToObject();
+    Handle<String> fieldStr = String::New(field);
+    object->Set(fieldStr, fieldStr);
+    return true;
+  } else {
+    return false;
+  }
+}
+
 ERL_NIF_TERM JsWrapper::MakeResourceTerm(ErlNifEnv *env) {
   enif_keep_resource(vmContext->erlVmContext);
 

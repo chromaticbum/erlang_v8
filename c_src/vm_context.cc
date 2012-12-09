@@ -101,7 +101,7 @@ Persistent<Value> VmContext::Poll() {
   return Poll();
 }
 
-int VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
+bool VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   ErlNifBinary binary;
 
   if(enif_inspect_iolist_as_binary(env, term, &binary)) {
@@ -115,9 +115,9 @@ int VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
     jsCall->data = (void *)script;
     enif_cond_broadcast(cond);
 
-    return 1;
+    return true;
   } else {
-    return 0;
+    return false;
   }
 }
 
