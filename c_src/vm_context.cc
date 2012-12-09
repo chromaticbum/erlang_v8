@@ -40,7 +40,7 @@ VmContext::~VmContext() {
   enif_mutex_destroy(mutex);
 }
 
-ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
+ERL_NIF_TERM VmContext::MakeTerm() {
   TRACE("VmContext::MakeTerm\n");
   return enif_make_resource(env, erlVmContext);
 }
@@ -74,7 +74,7 @@ void VmContext::PostResult(JsCall *jsCall, Persistent<Value> result) {
   JsWrapper *jsWrapper = new JsWrapper(this, result);
   ERL_NIF_TERM term = enif_make_tuple2(env,
       enif_make_atom(env, "result"),
-      jsWrapper->MakeTerm(env)
+      jsWrapper->MakeTerm()
       );
 
   // TODO: error handling

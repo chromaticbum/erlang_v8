@@ -74,7 +74,7 @@ class VmContext {
     VmContext(Vm *_vm, ErlNifEnv *_env);
     ~VmContext();
 
-    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
+    ERL_NIF_TERM MakeTerm();
     bool Run();
     void Stop();
     void Exit();
@@ -99,9 +99,9 @@ class JsWrapper {
 
     bool Define(char *field, ERL_NIF_TERM term);
 
-    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
-    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type);
-    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term);
+    ERL_NIF_TERM MakeTerm();
+    ERL_NIF_TERM MakeTerm(string type);
+    ERL_NIF_TERM MakeTerm(string type, ERL_NIF_TERM term);
 };
 
 class ErlWrapper {
