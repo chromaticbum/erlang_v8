@@ -12,9 +12,11 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *_env) {
   vm = _vm;
   env = _env;
 
-  enif_keep_resource(vm->erlVm);
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
   erlVmContext->vmContext = this;
+  term = enif_make_resource(env, erlVmContext);
+  enif_release_resource(erlVmContext);
+  enif_keep_resource(vm->erlVm);
 
   Locker locker(vm->isolate);
   Isolate::Scope iscope(vm->isolate);
@@ -33,11 +35,8 @@ VmContext::~VmContext() {
   context.Clear();
 
   enif_release_resource(vm->erlVm);
-  enif_release_resource(erlVmContext);
-  enif_cond_destroy(cond);
-  enif_mutex_destroy(mutex);
-  enif_clear_env(env);
-  enif_free_env(env);
+  //enif_cond_destroy(cond);
+  //enif_mutex_destroy(mutex);
 }
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {

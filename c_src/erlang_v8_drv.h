@@ -66,6 +66,7 @@ class VmContext {
     ErlNifTid tid;
     ErlNifCond *cond;
     ErlNifMutex *mutex;
+    ERL_NIF_TERM term;
     JsCall *jsCall;
 
     VmContext(Vm *_vm, ErlNifEnv *_env);

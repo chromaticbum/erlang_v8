@@ -27,7 +27,7 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
     VmContext *vmContext = vm->CreateVmContext(env);
 
-    return vmContext->MakeTerm(env);
+    return vmContext->term;
   } else {
     return enif_make_badarg(env);
   }
@@ -35,13 +35,16 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
 static void VmContextDestroy(ErlNifEnv *env, void *obj) {
   TRACE("VmContextDestroy\n");
+  ErlVmContext *erlVmContext = (ErlVmContext *)obj;
+
+  delete erlVmContext->vmContext;
 }
 
 static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
   TRACE("JsWrapperDestroy\n");
-  //ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
+  ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
-  //delete erlJsWrapper->jsWrapper;
+  delete erlJsWrapper->jsWrapper;
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,
