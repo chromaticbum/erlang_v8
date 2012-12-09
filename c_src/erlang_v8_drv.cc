@@ -15,9 +15,6 @@ static ERL_NIF_TERM NewVm(ErlNifEnv *env,
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
   TRACE("VmDestroy\n");
-  Vm *vm = (Vm *)obj;
-
-  delete vm;
 }
 
 static ERL_NIF_TERM NewContext(ErlNifEnv *env,
@@ -38,16 +35,13 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
 static void VmContextDestroy(ErlNifEnv *env, void *obj) {
   TRACE("VmContextDestroy\n");
-  Vm *vm = (Vm *)obj;
-
-  delete vm;
 }
 
 static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
   TRACE("JsWrapperDestroy\n");
-  JsWrapper *jsWrapper = (JsWrapper *)obj;
+  //ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
-  delete jsWrapper;
+  //delete erlJsWrapper->jsWrapper;
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,

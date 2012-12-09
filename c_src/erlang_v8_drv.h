@@ -87,13 +87,13 @@ class JsWrapper {
     VmContext *vmContext;
     Persistent<Value> value;
     ErlJsWrapper *erlJsWrapper;
+    ERL_NIF_TERM resourceTerm;
 
     JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
     ~JsWrapper();
 
     bool Define(char *field, ERL_NIF_TERM term);
 
-    ERL_NIF_TERM MakeResourceTerm(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term);

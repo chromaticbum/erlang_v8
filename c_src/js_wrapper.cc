@@ -8,10 +8,13 @@ JsWrapper::JsWrapper(VmContext *_vmContext, Persistent<Value> _value) {
 
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
+  resourceTerm = enif_make_resource(vmContext->env, erlJsWrapper);
+  enif_release_resource(erlJsWrapper);
+  enif_keep_resource(vmContext->erlVmContext);
 }
 
 JsWrapper::~JsWrapper() {
-  enif_release_resource(erlJsWrapper);
+  enif_release_resource(vmContext->erlVmContext);
 }
 
 bool JsWrapper::Define(char *field, ERL_NIF_TERM term) {
@@ -27,17 +30,11 @@ bool JsWrapper::Define(char *field, ERL_NIF_TERM term) {
   }
 }
 
-ERL_NIF_TERM JsWrapper::MakeResourceTerm(ErlNifEnv *env) {
-  enif_keep_resource(vmContext->erlVmContext);
-
-  return enif_make_resource(env, erlJsWrapper);
-}
-
 ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term) {
   return enif_make_tuple4(env,
       enif_make_atom(env, type.c_str()),
       vmContext->MakeTerm(env),
-      MakeResourceTerm(env),
+      resourceTerm,
       term
       );
 }
@@ -46,7 +43,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env, string type) {
   return enif_make_tuple3(env,
       enif_make_atom(env, type.c_str()),
       vmContext->MakeTerm(env),
-      MakeResourceTerm(env)
+      resourceTerm
       );
 }
 
