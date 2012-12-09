@@ -1,8 +1,10 @@
 #include <v8.h>
 #include "erlang/erl_nif.h"
 #include <string.h>
+#include <string>
 
 using namespace v8;
+using namespace std;
 
 #define LHCS(obj) \
   Locker locker(obj->vm->isolate); \
@@ -89,5 +91,8 @@ class JsWrapper {
     JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
     ~JsWrapper();
 
+    ERL_NIF_TERM MakeResourceTerm(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type);
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term);
 };

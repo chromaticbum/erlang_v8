@@ -23,7 +23,6 @@ static void VmDestroy(ErlNifEnv *env, void *obj) {
 static ERL_NIF_TERM NewContext(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
-  TRACE("NewContext\n");
   ErlVm *erlVm;
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
