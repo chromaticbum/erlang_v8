@@ -53,7 +53,7 @@ class Vm {
     Vm();
     ~Vm();
 
-    VmContext *CreateVmContext();
+    VmContext *CreateVmContext(ErlNifEnv *env);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
 };
 
@@ -68,7 +68,7 @@ class VmContext {
     ErlNifMutex *mutex;
     JsCall *jsCall;
 
-    VmContext(Vm *_vm);
+    VmContext(Vm *_vm, ErlNifEnv *_env);
     ~VmContext();
 
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);

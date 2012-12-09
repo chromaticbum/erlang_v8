@@ -28,7 +28,7 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
     Vm *vm = erlVm->vm;
 
-    VmContext *vmContext = vm->CreateVmContext();
+    VmContext *vmContext = vm->CreateVmContext(env);
 
     return vmContext->MakeTerm(env);
   } else {

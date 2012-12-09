@@ -11,8 +11,8 @@ Vm::~Vm() {
   enif_release_resource(erlVm);
 }
 
-VmContext *Vm::CreateVmContext() {
-  return new VmContext(this);
+VmContext *Vm::CreateVmContext(ErlNifEnv *env) {
+  return new VmContext(this, env);
 }
 
 ERL_NIF_TERM Vm::MakeTerm(ErlNifEnv *env) {
