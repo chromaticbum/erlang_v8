@@ -106,9 +106,14 @@ class JsWrapper {
 
 class ErlWrapper {
   public:
+    ErlNifEnv *env;
     VmContext *vmContext;
     ERL_NIF_TERM term;
+    Persistent<Value> persistent;
 
-    ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM term);
+    ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term);
     ~ErlWrapper();
+
+    Handle<External> MakeExternal();
+    Handle<Value> MakeHandle();
 };

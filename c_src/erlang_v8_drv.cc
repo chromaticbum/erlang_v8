@@ -85,7 +85,7 @@ static ERL_NIF_TERM SetField(ErlNifEnv *env,
       memcpy(field, binary.data, binary.size);
       field[binary.size] = NULL;
 
-      if(erlJsWrapper->jsWrapper->Set(field, argv[3])) {
+      if(erlJsWrapper->jsWrapper->Set(field, argv[2])) {
         return enif_make_atom(env, "ok");
       } else {
         return enif_make_badarg(env);

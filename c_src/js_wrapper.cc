@@ -23,7 +23,9 @@ bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
   if(value->IsObject()) {
     Handle<Object> object = value->ToObject();
     Handle<String> fieldStr = String::New(field);
-    object->Set(fieldStr, fieldStr);
+    ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
+    object->Set(fieldStr, erlWrapper->MakeHandle());
+
     return true;
   } else {
     return false;
