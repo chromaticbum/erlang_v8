@@ -7,10 +7,11 @@ static void *StartRunLoop(void *ptr) {
   return NULL;
 }
 
-VmContext::VmContext(Vm *_vm, ErlNifEnv *_env) {
+VmContext::VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server) {
   TRACE("VmContext::VmContext\n");
   vm = _vm;
   env = _env;
+  server = _server;
 
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
   erlVmContext->vmContext = this;

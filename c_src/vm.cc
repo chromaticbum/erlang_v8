@@ -14,6 +14,6 @@ Vm::Vm(ErlNifEnv *_env) {
 Vm::~Vm() {
 }
 
-VmContext *Vm::CreateVmContext(ErlNifEnv *env) {
-  return new VmContext(this, env);
+VmContext *Vm::CreateVmContext(ErlNifEnv *env, ErlNifPid server) {
+  return new VmContext(this, env, server);
 }

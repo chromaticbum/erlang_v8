@@ -26,11 +26,15 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
   ErlVm *erlVm;
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
-    Vm *vm = erlVm->vm;
+    ErlNifPid server;
+    if(enif_get_local_pid(env, argv[1], &server)) {
+      Vm *vm = erlVm->vm;
+      VmContext *vmContext = vm->CreateVmContext(env, server);
 
-    VmContext *vmContext = vm->CreateVmContext(env);
-
-    return vmContext->term;
+      return vmContext->term;
+    } else {
+      return enif_make_badarg(env);
+    }
   } else {
     return enif_make_badarg(env);
   }
@@ -108,7 +112,7 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
-  {"new_context", 1, NewContext},
+  {"new_context", 2, NewContext},
   {"execute", 3, Execute},
   {"set_field", 3, SetField}
 };

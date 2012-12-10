@@ -1,8 +1,16 @@
--module(erlang_v8).
+-module(ev8).
 
 -export([
+  new_vm/0,
+  new_context/1,
   execute_script/2
   ]).
+
+new_vm() ->
+  v8nif:new_vm().
+
+new_context(Vm) ->
+  v8nif:new_context(Vm, self()).
 
 execute_script(Context, Source) ->
   ResultPid = self(),
@@ -22,8 +30,8 @@ execute_script(Context, Source) ->
 -include_lib("eunit/include/eunit.hrl").
 
 execute_script_test() ->
-  Vm = v8nif:new_vm(),
-  Ctx = v8nif:new_context(Vm),
+  Vm = new_vm(),
+  Ctx = new_context(Vm),
 
   ?assertMatch({js_array, _, _}, execute_script(Ctx, <<"[]">>)),
   ?assertMatch({js_boolean_object, _, _}, execute_script(Ctx, <<"new Boolean()">>)),
