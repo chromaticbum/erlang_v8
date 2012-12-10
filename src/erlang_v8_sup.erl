@@ -21,8 +21,5 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-  V8SrvSpec = {erlang_v8_srv,
-               {erlang_v8_srv, start_link, []},
-               transient, 5000, worker, [erlang_v8_srv]},
-  {ok, {{simple_one_for_one, 5, 10}, [V8SrvSpec]}}.
+  {ok, {{simple_one_for_one, 5, 10}, []}}.
 

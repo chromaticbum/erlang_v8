@@ -9,6 +9,16 @@ static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
   delete erlWrapper;
 }
 
+static Handle<Value> WrapFun(const Arguments &args) {
+  Handle<External> external = Local<External>::Cast(args.Data());
+  ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+
+  // TODO: error handling
+  // TODO: send stuff and what not
+
+  return String::New("internal func");
+}
+
 ErlWrapper::ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term) {
   vmContext = _vmContext;
   env = enif_alloc_env();
@@ -61,6 +71,9 @@ Handle<Value> ErlWrapper::MakeHandle() {
     memcpy(buffer, binary.data, binary.size);
     buffer[binary.size] = NULL;
     value = String::New(buffer);
+  } else if(enif_is_fun(env, term)) {
+    Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, MakeExternal());
+    value = fn->GetFunction();
   } else {
     value = MakeExternal();
   }
