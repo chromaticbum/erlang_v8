@@ -4,6 +4,7 @@ static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
   Handle<External> external = Persistent<External>::Cast(value);
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
   value.Dispose();
+  V8::AdjustAmountOfExternalAllocatedMemory((intptr_t)(-sizeof(ErlWrapper)));
 
   delete erlWrapper;
 }
@@ -20,6 +21,8 @@ ErlWrapper::~ErlWrapper() {
 }
 
 Handle<External> ErlWrapper::MakeExternal() {
+  V8::AdjustAmountOfExternalAllocatedMemory(sizeof(ErlWrapper));
+
   return External::New(this);
 }
 
