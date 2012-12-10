@@ -75,17 +75,17 @@ class VmContext {
     VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server);
     ~VmContext();
 
-    ERL_NIF_TERM MakeTerm();
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     bool Run();
     void Stop();
     void Exit();
     void RunLoop();
     Persistent<Value> Poll();
     bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    void PostResult(JsCall *call, Persistent<Value> result);
-    void ResetJsCall();
+    void PostResult(ErlNifPid pid, Persistent<Value> result);
+    JsCall *ResetJsCall();
 
-    void ExecuteScript();
+    void ExecuteScript(JsCall *jsCall);
 };
 
 class JsWrapper {
@@ -100,9 +100,9 @@ class JsWrapper {
 
     bool Set(char *field, ERL_NIF_TERM term);
 
-    ERL_NIF_TERM MakeTerm();
-    ERL_NIF_TERM MakeTerm(string type);
-    ERL_NIF_TERM MakeTerm(string type, ERL_NIF_TERM term);
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type);
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env, string type, ERL_NIF_TERM term);
 };
 
 class ErlWrapper {

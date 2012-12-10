@@ -9,7 +9,7 @@ clean:
 	./rebar clean
 
 console: compile
-	erl -pa ../erlang_v8 -pa ebin/
+	erl -pa ../erlang_v8 -pa ebin/ -s ev8
 
 test: eunit
 

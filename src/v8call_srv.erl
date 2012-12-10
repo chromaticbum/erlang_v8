@@ -1,10 +1,11 @@
--module(v8context_srv).
+-module(v8call_srv).
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-        create/0]).
+-export([start_link/1,
+        create/1,
+        stop/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -14,14 +15,18 @@
          terminate/2,
          code_change/3]).
 
--record(state, {}).
+-record(state, {
+    pid}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-create() ->
-  v8context_sup:start_child().
+create(Pid) ->
+  v8call_sup:start_child(Pid).
+
+stop(Pid) ->
+  gen_server:call(Pid, stop).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -30,8 +35,8 @@ create() ->
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-  gen_server:start_link(?MODULE, [], []).
+start_link(Pid) ->
+  gen_server:start_link(?MODULE, [Pid], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -48,8 +53,8 @@ start_link() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
-  {ok, #state{}}.
+init([Pid]) ->
+  {ok, #state{pid = Pid}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -65,6 +70,8 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call(stop, _From, State) ->
+  {stop, normal, ok, State};
 handle_call(_Request, _From, State) ->
   Reply = ok,
   {reply, Reply, State}.
@@ -92,7 +99,8 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info(_Info, State) ->
+handle_info({result, Result}, State = #state{pid = Pid}) ->
+  Pid ! {ok, Result},
   {noreply, State}.
 
 %%--------------------------------------------------------------------

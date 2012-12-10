@@ -1,10 +1,10 @@
--module(v8context_sup).
+-module(v8call_sup).
 
 -behaviour(supervisor).
 
 %% API
 -export([start_link/0,
-        start_child/0]).
+        start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -13,8 +13,8 @@
 %%% API functions
 %%%===================================================================
 
-start_child() ->
-  supervisor:start_child(?MODULE, []).
+start_child(Pid) ->
+  supervisor:start_child(?MODULE, [Pid]).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -44,10 +44,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-  V8ContextSpec = {v8context_srv,
-                   {v8context_srv, start_link, []},
-                   temporary, 5000, worker, [v8context_srv]},
-  {ok, {{simple_one_for_one, 5, 10}, [V8ContextSpec]}}.
+  V8CallSpec = {v8call_srv,
+                {v8call_srv, start_link, []},
+                temporary, 5000, worker, [v8call_srv]},
+  {ok, {{simple_one_for_one, 5, 10}, [V8CallSpec]}}.
 
 %%%===================================================================
 %%% Internal functions

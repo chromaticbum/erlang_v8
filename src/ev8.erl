@@ -1,28 +1,29 @@
 -module(ev8).
 
 -export([
+  start/0,
   new_vm/0,
   new_context/1,
   execute_script/2
   ]).
 
+start() ->
+  application:start(erlang_v8).
+
 new_vm() ->
   v8nif:new_vm().
 
 new_context(Vm) ->
-  v8nif:new_context(Vm, self()).
+  {ok, Pid} = v8context_srv:create(),
+  v8nif:new_context(Vm, Pid).
 
 execute_script(Context, Source) ->
-  ResultPid = self(),
-  Pid = spawn(fun() ->
-          receive
-            {result, Result} ->
-              ResultPid ! {ok, Result}
-          end
-      end),
+  io:format("Execute Script~n"),
+  {ok, Pid} = v8call_srv:create(self()),
   v8nif:execute(Context, Pid, Source),
   receive
     {ok, Result} ->
+      v8call_srv:stop(Pid),
       Result
   end.
 
@@ -30,6 +31,7 @@ execute_script(Context, Source) ->
 -include_lib("eunit/include/eunit.hrl").
 
 execute_script_test() ->
+  ok = application:start(erlang_v8),
   Vm = new_vm(),
   Ctx = new_context(Vm),
 
