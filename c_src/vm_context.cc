@@ -9,10 +9,9 @@ static void *StartRunLoop(void *ptr) {
   return NULL;
 }
 
-VmContext::VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server) {
+VmContext::VmContext(Vm *_vm, ErlNifEnv *env, ErlNifPid _server) {
   TRACE("VmContext::VmContext\n");
   vm = _vm;
-  env = _env;
   server = _server;
 
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
@@ -28,10 +27,12 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server) {
 
   string condName = "VmContext.cond" + id++;
   string mutexName = "VmContext.mutex" + id++;
+  string condName2 = "VmContext.cond" + id++;
+  string mutexName2 = "VmContext.mutex" + id++;
   cond = enif_cond_create((char *)condName.c_str());
   mutex = enif_mutex_create((char *)mutexName.c_str());
-  cond2 = enif_cond_create((char *)"hello2");
-  mutex2 = enif_mutex_create((char *)"hello3");
+  cond2 = enif_cond_create((char *)condName2.c_str());
+  mutex2 = enif_mutex_create((char *)mutexName2.c_str());
   Run();
 }
 
@@ -175,7 +176,6 @@ bool VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
     enif_cond_broadcast(cond);
     enif_mutex_unlock(mutex);
     while(jsCall != NULL) {
-      TRACE("NOT NULL\n");
       enif_cond_wait(cond2, mutex2);
     }
     enif_mutex_unlock(mutex2);

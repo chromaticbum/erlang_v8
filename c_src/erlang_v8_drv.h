@@ -63,7 +63,6 @@ class VmContext {
   public:
     Vm *vm;
     Persistent<Context> context;
-    ErlNifEnv *env;
     ErlNifPid server;
     ErlVmContext *erlVmContext;
     ErlNifTid tid;
@@ -72,7 +71,7 @@ class VmContext {
     ERL_NIF_TERM term;
     JsCall *jsCall;
 
-    VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server);
+    VmContext(Vm *_vm, ErlNifEnv *env, ErlNifPid _server);
     ~VmContext();
 
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);

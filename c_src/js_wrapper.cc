@@ -14,6 +14,8 @@ JsWrapper::JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _v
 }
 
 JsWrapper::~JsWrapper() {
+  LHCS(vmContext);
+  value.Dispose();
   enif_release_resource(vmContext->erlVmContext);
 }
 
