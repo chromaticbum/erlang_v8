@@ -18,7 +18,7 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *_env, ErlNifPid _server) {
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
   erlVmContext->vmContext = this;
   term = enif_make_resource(env, erlVmContext);
-  //enif_release_resource(erlVmContext);
+  enif_release_resource(erlVmContext);
   enif_keep_resource(vm->erlVm);
 
   Locker locker(vm->isolate);
@@ -43,7 +43,7 @@ VmContext::~VmContext() {
   context.Dispose();
   context.Clear();
 
-  //enif_release_resource(vm->erlVm);
+  enif_release_resource(vm->erlVm);
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
 }
@@ -89,6 +89,8 @@ void VmContext::PostResult(ErlNifPid pid, Persistent<Value> result) {
 
   // TODO: error handling
   enif_send(NULL, &pid, env, term);
+  enif_clear_env(env);
+  enif_free_env(env);
 }
 
 void VmContext::ExecuteScript(JsCall *jsCall) {
@@ -102,6 +104,11 @@ void VmContext::ExecuteScript(JsCall *jsCall) {
   TRACE("VmContext::ExecuteScript - 1\n");
   PostResult(jsCall->pid, result);
   TRACE("VmContext::ExecuteScript - 2\n");
+  FreeJsCall(jsCall);
+}
+
+void VmContext::FreeJsCall(JsCall *jsCall) {
+  free(jsCall->data);
   free(jsCall);
 }
 
@@ -161,7 +168,6 @@ bool VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
     script[binary.size] = NULL;
 
     jsCall = (JsCall *)malloc(sizeof(JsCall));
-    jsCall->env = env;
     jsCall->pid = pid;
     jsCall->type = SCRIPT;
     jsCall->data = script;

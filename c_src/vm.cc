@@ -8,7 +8,7 @@ Vm::Vm(ErlNifEnv *_env) {
   erlVm = (ErlVm *) enif_alloc_resource(VmResource, sizeof(ErlVm));
   erlVm->vm = this;
   term = enif_make_resource(env, erlVm);
-  //enif_release_resource(erlVm);
+  enif_release_resource(erlVm);
 }
 
 Vm::~Vm() {

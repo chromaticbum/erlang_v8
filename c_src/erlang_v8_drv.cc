@@ -15,9 +15,9 @@ static ERL_NIF_TERM NewVm(ErlNifEnv *env,
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
   printf("VmDestroy\n");
-  //ErlVm *erlVm = (ErlVm *)obj;
+  ErlVm *erlVm = (ErlVm *)obj;
 
-  //delete erlVm->vm;
+  delete erlVm->vm;
 }
 
 static ERL_NIF_TERM NewContext(ErlNifEnv *env,
@@ -42,16 +42,16 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 
 static void VmContextDestroy(ErlNifEnv *env, void *obj) {
   printf("VmContextDestroy\n");
-  //ErlVmContext *erlVmContext = (ErlVmContext *)obj;
+  ErlVmContext *erlVmContext = (ErlVmContext *)obj;
 
-  //delete erlVmContext->vmContext;
+  delete erlVmContext->vmContext;
 }
 
 static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
   printf("JsWrapperDestroy\n");
-  //ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
+  ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
-  //delete erlJsWrapper->jsWrapper;
+  delete erlJsWrapper->jsWrapper;
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,

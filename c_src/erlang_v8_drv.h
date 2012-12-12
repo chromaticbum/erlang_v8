@@ -40,7 +40,6 @@ typedef enum {
 } JsCallType;
 
 typedef struct {
-  ErlNifEnv *env;
   ErlNifPid pid;
   JsCallType type;
   void *data;
@@ -84,6 +83,7 @@ class VmContext {
     bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
     JsCall *ResetJsCall();
+    void FreeJsCall(JsCall *jsCall);
 
     void ExecuteScript(JsCall *jsCall);
     void Exit(JsCall *jsCall);
