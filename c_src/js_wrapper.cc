@@ -2,15 +2,15 @@
 
 using namespace std;
 
-JsWrapper::JsWrapper(VmContext *_vmContext, Persistent<Value> _value) {
+JsWrapper::JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _value) {
   vmContext = _vmContext;
   value = _value;
 
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
-  resourceTerm = enif_make_resource(vmContext->env, erlJsWrapper);
+  resourceTerm = enif_make_resource(env, erlJsWrapper);
   //enif_release_resource(erlJsWrapper);
-  enif_keep_resource(vmContext->erlVmContext);
+  //enif_keep_resource(vmContext->erlVmContext);
 }
 
 JsWrapper::~JsWrapper() {

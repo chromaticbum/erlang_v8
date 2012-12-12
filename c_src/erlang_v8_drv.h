@@ -82,7 +82,6 @@ class VmContext {
     void RunLoop();
     Persistent<Value> Poll();
     bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    void PostResult(ErlNifEnv *env, ErlNifPid pid);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
     JsCall *ResetJsCall();
 
@@ -97,7 +96,7 @@ class JsWrapper {
     ErlJsWrapper *erlJsWrapper;
     ERL_NIF_TERM resourceTerm;
 
-    JsWrapper(VmContext *_vmContext, Persistent<Value> _value);
+    JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _value);
     ~JsWrapper();
 
     bool Set(char *field, ERL_NIF_TERM term);
