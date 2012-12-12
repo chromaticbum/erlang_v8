@@ -14,10 +14,10 @@ static ERL_NIF_TERM NewVm(ErlNifEnv *env,
 }
 
 static void VmDestroy(ErlNifEnv *env, void *obj) {
-  TRACE("VmDestroy\n");
-  ErlVm *erlVm = (ErlVm *)obj;
+  printf("VmDestroy\n");
+  //ErlVm *erlVm = (ErlVm *)obj;
 
-  delete erlVm->vm;
+  //delete erlVm->vm;
 }
 
 static ERL_NIF_TERM NewContext(ErlNifEnv *env,
@@ -41,17 +41,17 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
 }
 
 static void VmContextDestroy(ErlNifEnv *env, void *obj) {
-  TRACE("VmContextDestroy\n");
-  ErlVmContext *erlVmContext = (ErlVmContext *)obj;
+  printf("VmContextDestroy\n");
+  //ErlVmContext *erlVmContext = (ErlVmContext *)obj;
 
-  delete erlVmContext->vmContext;
+  //delete erlVmContext->vmContext;
 }
 
 static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
-  TRACE("JsWrapperDestroy\n");
-  ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
+  printf("JsWrapperDestroy\n");
+  //ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
-  delete erlJsWrapper->jsWrapper;
+  //delete erlJsWrapper->jsWrapper;
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,
@@ -62,6 +62,8 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
 
   if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
     VmContext *vmContext = erlVmContext->vmContext;
+    enif_mutex_lock(vmContext->mutex);
+    enif_mutex_lock(vmContext->mutex2);
     ErlNifPid pid;
     if(enif_get_local_pid(env, argv[1], &pid)) {
       TRACE("Execute - 1\n");

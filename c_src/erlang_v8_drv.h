@@ -40,6 +40,7 @@ typedef enum {
 } JsCallType;
 
 typedef struct {
+  ErlNifEnv *env;
   ErlNifPid pid;
   JsCallType type;
   void *data;
@@ -67,8 +68,8 @@ class VmContext {
     ErlNifPid server;
     ErlVmContext *erlVmContext;
     ErlNifTid tid;
-    ErlNifCond *cond;
-    ErlNifMutex *mutex;
+    ErlNifCond *cond, *cond2;
+    ErlNifMutex *mutex, *mutex2;
     ERL_NIF_TERM term;
     JsCall *jsCall;
 
@@ -78,14 +79,15 @@ class VmContext {
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     bool Run();
     void Stop();
-    void Exit();
     void RunLoop();
     Persistent<Value> Poll();
     bool Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    void PostResult(ErlNifEnv *env, ErlNifPid pid);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
     JsCall *ResetJsCall();
 
     void ExecuteScript(JsCall *jsCall);
+    void Exit(JsCall *jsCall);
 };
 
 class JsWrapper {

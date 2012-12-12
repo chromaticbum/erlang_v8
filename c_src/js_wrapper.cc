@@ -9,12 +9,12 @@ JsWrapper::JsWrapper(VmContext *_vmContext, Persistent<Value> _value) {
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
   resourceTerm = enif_make_resource(vmContext->env, erlJsWrapper);
-  enif_release_resource(erlJsWrapper);
+  //enif_release_resource(erlJsWrapper);
   enif_keep_resource(vmContext->erlVmContext);
 }
 
 JsWrapper::~JsWrapper() {
-  enif_release_resource(vmContext->erlVmContext);
+  //enif_release_resource(vmContext->erlVmContext);
 }
 
 bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {

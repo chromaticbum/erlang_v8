@@ -5,7 +5,8 @@
 %% API
 -export([start_link/1,
         create/1,
-        stop/1]).
+        stop/1,
+        make_call/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -27,6 +28,9 @@ create(Pid) ->
 
 stop(Pid) ->
   gen_server:call(Pid, stop).
+
+make_call(Pid) ->
+  gen_server:call(Pid, make_call).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -70,6 +74,8 @@ init([Pid]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call(make_call, _From, State) ->
+  {reply, ok, State};
 handle_call(stop, _From, State) ->
   {stop, normal, ok, State};
 handle_call(_Request, _From, State) ->
@@ -101,7 +107,10 @@ handle_cast(_Msg, State) ->
 %%--------------------------------------------------------------------
 handle_info({result, Result}, State = #state{pid = Pid}) ->
   Pid ! {ok, Result},
-  {noreply, State}.
+  {stop, normal, State};
+handle_info(Info, State) ->
+  io:format("RESULT CALL: ~p~n", [Info]),
+  {stop, normal, State}.
 
 %%--------------------------------------------------------------------
 %% @private

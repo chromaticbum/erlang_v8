@@ -18,14 +18,12 @@ new_context(Vm) ->
   v8nif:new_context(Vm, Pid).
 
 execute_script(Context, Source) ->
-  io:format("Execute Script~n"),
   {ok, Pid} = v8call_srv:create(self()),
-  v8nif:execute(Context, Pid, Source),
-  receive
-    {ok, Result} ->
-      v8call_srv:stop(Pid),
-      Result
-  end.
+  {ok, Pid2} = v8call_srv:create(Pid),
+  ok = v8call_srv:make_call(Pid),
+  ok = v8call_srv:make_call(Pid2),
+  v8nif:execute(Context, Pid2, Source),
+  ok.
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
