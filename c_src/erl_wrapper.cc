@@ -12,11 +12,19 @@ static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
 static Handle<Value> WrapFun(const Arguments &args) {
   Handle<External> external = Local<External>::Cast(args.Data());
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+  ErlNifEnv *env = enif_alloc_env();
 
-  // TODO: error handling
-  // TODO: send stuff and what not
+  ERL_NIF_TERM term = enif_make_tuple3(env,
+      enif_make_atom(env, "call"),
+      enif_make_copy(env, erlWrapper->term),
+      enif_make_list1(env, enif_make_atom(env, "ok"))
+      );
+  enif_send(NULL, &(erlWrapper->vmContext->server), env, term);
+  enif_clear_env(env);
+  enif_free_env(env);
+  // TODO error handling
 
-  return String::New("internal func");
+  return erlWrapper->vmContext->Poll();
 }
 
 ErlWrapper::ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term) {

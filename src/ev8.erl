@@ -4,7 +4,8 @@
   start/0,
   new_vm/0,
   new_context/1,
-  execute_script/2
+  execute_script/2,
+  call_respond/2
   ]).
 
 start() ->
@@ -15,14 +16,19 @@ new_vm() ->
 
 new_context(Vm) ->
   {ok, Pid} = v8context_srv:create(),
-  v8nif:new_context(Vm, Pid).
+  Ctx = v8nif:new_context(Vm, Pid),
+  ok = v8context_srv:set_context(Pid, Ctx),
+  Ctx.
 
 execute_script(Context, Source) ->
-  v8nif:execute(Context, self(), Source),
+  v8nif:execute(Context, self(), {script, Source}),
   receive
     {result, Result} ->
       Result
   end.
+
+call_respond(Context, Result) ->
+  v8nif:call_respond(Context, Result).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -32,20 +38,14 @@ execute_script_test() ->
   Vm = new_vm(),
   Ctx = new_context(Vm),
 
-  ?assertMatch({js_array, _, _}, execute_script(Ctx, <<"[]">>)),
-  ?assertMatch({js_boolean_object, _, _}, execute_script(Ctx, <<"new Boolean()">>)),
-  ?assertMatch({js_date, _, _}, execute_script(Ctx, <<"new Date()">>)),
-  ?assertMatch({js_function, _, _}, execute_script(Ctx, <<"var f = function() { }; f;">>)),
-  ?assertMatch({js_number_object, _, _}, execute_script(Ctx, <<"new Number()">>)),
-  ?assertMatch({js_reg_exp, _, _}, execute_script(Ctx, <<"/hey/">>)),
-  ?assertMatch({js_string_object, _, _}, execute_script(Ctx, <<"new String()">>)),
-  ?assertMatch({js_undefined, _, _}, execute_script(Ctx, <<"undefined">>)),
-  ?assertMatch({js_null, _, _}, execute_script(Ctx, <<"null">>)),
-  ?assertMatch({js_number, _, _, 22}, execute_script(Ctx, <<"22">>)),
-  ?assertMatch({js_number, _, _, -22}, execute_script(Ctx, <<"-22">>)),
-  ?assertMatch({js_number, _, _, 22.2}, execute_script(Ctx, <<"22.2">>)),
-  ?assertMatch({js_boolean, _, _, true}, execute_script(Ctx, <<"true">>)),
-  ?assertMatch({js_string, _, _, <<"hello">>}, execute_script(Ctx, <<"'hello'">>)),
-  ?assertMatch({js_object, _, _}, execute_script(Ctx, <<"new Object()">>)).
+  ?assertMatch(undefined, execute_script(Ctx, <<"undefined">>)),
+  ?assertMatch(null, execute_script(Ctx, <<"null">>)),
+  ?assertMatch(22, execute_script(Ctx, <<"22">>)),
+  ?assertMatch(-22, execute_script(Ctx, <<"-22">>)),
+  ?assertMatch(22.2, execute_script(Ctx, <<"22.2">>)),
+  ?assertMatch(true, execute_script(Ctx, <<"true">>)),
+  ?assertMatch(false, execute_script(Ctx, <<"false">>)),
+  ?assertMatch(<<"hello">>, execute_script(Ctx, <<"'hello'">>)),
+  ?assertMatch(<<>>, execute_script(Ctx, <<"new Object()">>)).
 
 -endif.

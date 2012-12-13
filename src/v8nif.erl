@@ -22,7 +22,7 @@ new_vm() ->
 new_context(_Vm, _Server) ->
   error(not_loaded).
 
-execute(_Ctx, _Pid, _Js) ->
+execute(_Ctx, _Pid, _Command) ->
   error(not_loaded).
 
 set_field(_JsWrapper, _Field, _Term) ->

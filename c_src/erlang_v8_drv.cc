@@ -65,13 +65,10 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
     enif_mutex_lock(vmContext->mutex);
     enif_mutex_lock(vmContext->mutex2);
     ErlNifPid pid;
+
     if(enif_get_local_pid(env, argv[1], &pid)) {
       TRACE("Execute - 1\n");
-      if(vmContext->Send(env, pid, argv[2])) {
-        return enif_make_atom(env, "ok");
-      } else {
-        return enif_make_badarg(env);
-      }
+      return vmContext->Send(env, pid, argv[2]);
     } else {
       return enif_make_badarg(env);
     }

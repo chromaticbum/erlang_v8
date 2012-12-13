@@ -82,10 +82,9 @@ void VmContext::Stop() {
 void VmContext::PostResult(ErlNifPid pid, Persistent<Value> result) {
   TRACE("VmContext::PostResult\n");
   ErlNifEnv *env = enif_alloc_env();
-  JsWrapper *jsWrapper = new JsWrapper(this, env, result);
   ERL_NIF_TERM term = enif_make_tuple2(env,
       enif_make_atom(env, "result"),
-      jsWrapper->MakeTerm(env)
+      JsWrapper::MakeTerm(this, env, result)
       );
 
   // TODO: error handling
@@ -101,7 +100,6 @@ void VmContext::ExecuteScript(JsCall *jsCall) {
   Handle<String> source = String::New(sourceBuffer);
   Handle<Script> script = Script::Compile(source);
   Persistent<Value> result = Persistent<Value>::New(script->Run());
-  ErlNifPid pid = jsCall->pid;
   TRACE("VmContext::ExecuteScript - 1\n");
   PostResult(jsCall->pid, result);
   TRACE("VmContext::ExecuteScript - 2\n");
@@ -159,8 +157,7 @@ Persistent<Value> VmContext::Poll() {
   return Poll();
 }
 
-bool VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
-  TRACE("VmContext::Send\n");
+ERL_NIF_TERM VmContext::SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   ErlNifBinary binary;
 
   if(enif_inspect_iolist_as_binary(env, term, &binary)) {
@@ -180,9 +177,37 @@ bool VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
     }
     enif_mutex_unlock(mutex2);
 
-    return true;
+    return enif_make_atom(env, "ok");
   } else {
-    return false;
+    return enif_make_badarg(env);
+  }
+}
+
+ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
+  TRACE("VmContext::Send\n");
+  const ERL_NIF_TERM *command;
+  int arity;
+
+  if(enif_get_tuple(env, term, &arity, &command)) {
+    unsigned length;
+    if(enif_get_atom_length(env, command[0], &length, ERL_NIF_LATIN1)) {
+      char *buffer = (char *)malloc((length + 1) * sizeof(char));
+      if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
+        if(strncmp(buffer, (char *)"script", length) == 0) {
+          SendScript(env, pid, command[1]);
+
+          return enif_make_atom(env, "ok");
+        } else {
+          return enif_make_badarg(env);
+        }
+      } else {
+        return enif_make_badarg(env);
+      }
+    } else {
+      return enif_make_badarg(env);
+    }
+  } else {
+    return enif_make_badarg(env);
   }
 }
 

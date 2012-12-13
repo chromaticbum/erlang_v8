@@ -4,7 +4,8 @@
 
 %% API
 -export([start_link/0,
-        create/0]).
+        create/0,
+        set_context/2]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -14,7 +15,8 @@
          terminate/2,
          code_change/3]).
 
--record(state, {}).
+-record(state, {
+    context}).
 
 %%%===================================================================
 %%% API
@@ -22,6 +24,9 @@
 
 create() ->
   v8context_sup:start_child().
+
+set_context(Pid, Ctx) ->
+  gen_server:call(Pid, {set_context, Ctx}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -65,6 +70,8 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call({set_context, Ctx}, _From, State) ->
+  {reply, ok, State#state{context = Ctx}};
 handle_call(_Request, _From, State) ->
   Reply = ok,
   {reply, Reply, State}.
@@ -92,6 +99,10 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_info({call, Fun, Args}, State) ->
+  Result = js_call(Fun, Args),
+  ev8:call_respond(State#state.context, Result),
+  {noreply, State};
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -123,3 +134,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+js_call({Module, Fun}, Args) ->
+  apply(Module, Fun, Args);
+js_call(Fun, Args) ->
+  apply(Fun, Args).
