@@ -5,6 +5,7 @@
   new_vm/0,
   new_context/1,
   execute_script/2,
+  execute_object/4,
   call_respond/2
   ]).
 
@@ -20,6 +21,13 @@ new_context(Vm) ->
   ok = v8context_srv:set_context(Pid, Ctx),
   Ctx.
 
+execute_object(Context, JsObject, Field, Args) ->
+  v8nif:execute(Context, self(), {call, JsObject, Field, Args}),
+  receive
+    {result, Result} ->
+      Result
+  end.
+
 execute_script(Context, Source) ->
   v8nif:execute(Context, self(), {script, Source}),
   receive
@@ -33,8 +41,20 @@ call_respond(Context, Result) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+execute_object_test() ->
+  application:start(erlang_v8),
+  Vm = new_vm(),
+  Ctx = new_context(Vm),
+
+  Obj = execute_script(Ctx, <<"new Boolean(true)">>),
+  Obj2 = execute_script(Ctx, <<"new Boolean(false)">>),
+  Obj3 = execute_script(Ctx, <<"new String('hello world!')">>),
+  ?assertMatch(true, execute_object(Ctx, Obj, <<"valueOf">>, null)),
+  ?assertMatch(false, execute_object(Ctx, Obj2, <<"valueOf">>, null)),
+  ?assertMatch(<<"hello world!">>, execute_object(Ctx, Obj3, <<"toString">>, null)).
+
 execute_script_test() ->
-  ok = application:start(erlang_v8),
+  application:start(erlang_v8),
   Vm = new_vm(),
   Ctx = new_context(Vm),
 

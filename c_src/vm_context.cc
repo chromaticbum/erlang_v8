@@ -107,6 +107,11 @@ void VmContext::ExecuteScript(JsCall *jsCall) {
 }
 
 void VmContext::FreeJsCall(JsCall *jsCall) {
+  //switch(jsCall->type) {
+    //case CALL:
+      //JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
+      //free(jsCallObject->field);
+  //}
   free(jsCall->data);
   free(jsCall);
 }
@@ -129,6 +134,18 @@ void VmContext::Exit(JsCall *jsCall) {
   enif_thread_exit(NULL);
 }
 
+void VmContext::ExecuteCall(JsCall *jsCall) {
+  LHCS(this);
+  JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
+  Handle<String> field = String::New(jsCallObject->field);
+  Handle<Function> fun = Local<Function>::Cast(jsCallObject->value->ToObject()->Get(field));
+  Persistent<Value> result = Persistent<Value>::New(
+      fun->Call(jsCallObject->value->ToObject(), 0, 0)
+    );
+  PostResult(jsCall->pid, result);
+  FreeJsCall(jsCall);
+}
+
 Persistent<Value> VmContext::Poll() {
   TRACE("VmContext::Poll\n");
 
@@ -146,6 +163,9 @@ Persistent<Value> VmContext::Poll() {
   switch(jsCall2->type) {
     case SCRIPT:
       ExecuteScript(jsCall2);
+      break;
+    case CALL:
+      ExecuteCall(jsCall2);
       break;
     case EXIT:
       Exit(jsCall2);
@@ -170,14 +190,39 @@ ERL_NIF_TERM VmContext::SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM t
     jsCall->type = SCRIPT;
     jsCall->data = script;
 
-    enif_cond_broadcast(cond);
-    enif_mutex_unlock(mutex);
-    while(jsCall != NULL) {
-      enif_cond_wait(cond2, mutex2);
-    }
-    enif_mutex_unlock(mutex2);
-
     return enif_make_atom(env, "ok");
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
+ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
+    ErlNifPid pid,
+    ERL_NIF_TERM obj,
+    ERL_NIF_TERM field,
+    ERL_NIF_TERM args) {
+  ErlJsWrapper *erlJsWrapper;
+
+  if(enif_get_resource(env, obj, JsWrapperResource, (void **)(&erlJsWrapper))) {
+    ErlNifBinary binary;
+    if(enif_inspect_iolist_as_binary(env, field, &binary)) {
+      char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
+      memcpy(buffer, binary.data, binary.size);
+      buffer[binary.size] = NULL;
+
+      JsCallObject *jsCallObject = (JsCallObject *)malloc(sizeof(JsCallObject));
+      jsCallObject->value = erlJsWrapper->jsWrapper->value;
+      jsCallObject->field = buffer;
+
+      jsCall = (JsCall *)malloc(sizeof(JsCall));
+      jsCall->pid = pid;
+      jsCall->type = CALL;
+      jsCall->data = jsCallObject;
+
+      return enif_make_atom(env, "ok");
+    } else {
+      return enif_make_badarg(env);
+    }
   } else {
     return enif_make_badarg(env);
   }
@@ -187,6 +232,7 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
   int arity;
+  ERL_NIF_TERM result;
 
   if(enif_get_tuple(env, term, &arity, &command)) {
     unsigned length;
@@ -194,21 +240,30 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, (char *)"script", length) == 0) {
-          SendScript(env, pid, command[1]);
-
-          return enif_make_atom(env, "ok");
+          result = SendScript(env, pid, command[1]);
+        } else if(strncmp(buffer, (char *)"call", length) == 0) {
+          result = SendCall(env, pid, command[1], command[2], command[3]);
         } else {
-          return enif_make_badarg(env);
+          result = enif_make_badarg(env);
         }
       } else {
-        return enif_make_badarg(env);
+        result = enif_make_badarg(env);
       }
     } else {
-      return enif_make_badarg(env);
+      result = enif_make_badarg(env);
     }
   } else {
-    return enif_make_badarg(env);
+    result = enif_make_badarg(env);
   }
+
+  enif_cond_broadcast(cond);
+  enif_mutex_unlock(mutex);
+  while(jsCall != NULL) {
+    enif_cond_wait(cond2, mutex2);
+  }
+  enif_mutex_unlock(mutex2);
+
+  return result;
 }
 
 void VmContext::RunLoop() {

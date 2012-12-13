@@ -36,7 +36,8 @@ typedef struct {
 
 typedef enum {
   EXIT,
-  SCRIPT
+  SCRIPT,
+  CALL
 } JsCallType;
 
 typedef struct {
@@ -44,6 +45,11 @@ typedef struct {
   JsCallType type;
   void *data;
 } JsCall;
+
+typedef struct {
+  Persistent<Value> value;
+  char *field;
+} JsCallObject;
 
 class Vm {
   public:
@@ -81,11 +87,17 @@ class VmContext {
     Persistent<Value> Poll();
     ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     ERL_NIF_TERM SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    ERL_NIF_TERM SendCall(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM obj,
+        ERL_NIF_TERM field,
+        ERL_NIF_TERM args);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
     JsCall *ResetJsCall();
     void FreeJsCall(JsCall *jsCall);
 
     void ExecuteScript(JsCall *jsCall);
+    void ExecuteCall(JsCall *jsCall);
     void Exit(JsCall *jsCall);
 };
 
