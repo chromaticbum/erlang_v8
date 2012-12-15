@@ -3,9 +3,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0,
-        create/0,
-        set_context/2]).
+-export([start_link/1,
+         create/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -22,11 +21,8 @@
 %%% API
 %%%===================================================================
 
-create() ->
-  v8context_sup:start_child().
-
-set_context(Pid, Ctx) ->
-  gen_server:call(Pid, {set_context, Ctx}).
+create(Context) ->
+  v8context_sup:start_child(Context).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -35,8 +31,8 @@ set_context(Pid, Ctx) ->
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-  gen_server:start_link(?MODULE, [], []).
+start_link(Context) ->
+  gen_server:start_link(?MODULE, [Context], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -53,8 +49,10 @@ start_link() ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
-  {ok, #state{}}.
+init([Context]) ->
+  ev8:set_context_server(Context, self()),
+  {ok, #state{
+      context = Context}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -70,8 +68,6 @@ init([]) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_call({set_context, Ctx}, _From, State) ->
-  {reply, ok, State#state{context = Ctx}};
 handle_call(_Request, _From, State) ->
   Reply = ok,
   {reply, Reply, State}.

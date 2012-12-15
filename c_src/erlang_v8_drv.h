@@ -63,7 +63,7 @@ class Vm {
     Vm(ErlNifEnv *_env);
     ~Vm();
 
-    VmContext *CreateVmContext(ErlNifEnv *env, ErlNifPid server);
+    VmContext *CreateVmContext(ErlNifEnv *env);
 };
 
 class VmContext {
@@ -78,9 +78,10 @@ class VmContext {
     ERL_NIF_TERM term;
     JsCall *jsCall;
 
-    VmContext(Vm *_vm, ErlNifEnv *env, ErlNifPid _server);
+    VmContext(Vm *_vm, ErlNifEnv *env);
     ~VmContext();
 
+    void SetServer(ErlNifPid pid);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     bool Run();
     void Stop();

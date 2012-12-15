@@ -26,12 +26,27 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
   ErlVm *erlVm;
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
-    ErlNifPid server;
-    if(enif_get_local_pid(env, argv[1], &server)) {
-      Vm *vm = erlVm->vm;
-      VmContext *vmContext = vm->CreateVmContext(env, server);
+    Vm *vm = erlVm->vm;
 
-      return vmContext->term;
+    return vm->CreateVmContext(env)->term;
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
+static ERL_NIF_TERM SetContextServer(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlVmContext *erlVmContext;
+
+  if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
+    VmContext *vmContext = erlVmContext->vmContext;
+    ErlNifPid server;
+
+    if(enif_get_local_pid(env, argv[1], &server)) {
+      vmContext->SetServer(server);
+
+      return enif_make_atom(env, "ok");
     } else {
       return enif_make_badarg(env);
     }
@@ -113,7 +128,8 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
-  {"new_context", 2, NewContext},
+  {"new_context", 1, NewContext},
+  {"set_context_server", 2, SetContextServer},
   {"execute", 3, Execute},
   {"set_field", 3, SetField}
 };

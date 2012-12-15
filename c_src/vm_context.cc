@@ -9,10 +9,9 @@ static void *StartRunLoop(void *ptr) {
   return NULL;
 }
 
-VmContext::VmContext(Vm *_vm, ErlNifEnv *env, ErlNifPid _server) {
+VmContext::VmContext(Vm *_vm, ErlNifEnv *env) {
   TRACE("VmContext::VmContext\n");
   vm = _vm;
-  server = _server;
 
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
   erlVmContext->vmContext = this;
@@ -47,6 +46,10 @@ VmContext::~VmContext() {
   enif_release_resource(vm->erlVm);
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
+}
+
+void VmContext::SetServer(ErlNifPid pid) {
+  server = pid; 
 }
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {

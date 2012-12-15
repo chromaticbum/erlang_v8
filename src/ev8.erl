@@ -4,7 +4,9 @@
   start/0,
   new_vm/0,
   new_context/1,
+  set_context_server/2,
   execute_script/2,
+  set_field/3,
   execute_field/4,
   call_respond/3
   ]).
@@ -16,10 +18,15 @@ new_vm() ->
   v8nif:new_vm().
 
 new_context(Vm) ->
-  {ok, Pid} = v8context_srv:create(),
-  Ctx = v8nif:new_context(Vm, Pid),
-  ok = v8context_srv:set_context(Pid, Ctx),
+  Ctx = v8nif:new_context(Vm),
+  {ok, _Pid} = v8context_srv:create(Ctx),
   Ctx.
+
+set_context_server(Context, Server) ->
+  v8nif:set_context_server(Context, Server).
+
+set_field(JsObject, Field, Term) ->
+  v8nif:set_field(JsObject, Field, Term).
 
 execute_field(Context, JsObject, Field, Args) ->
   v8nif:execute(Context, self(), {call, JsObject, Field, Args}),
@@ -56,9 +63,9 @@ execute_object_test() ->
   Obj = execute_script(Ctx, <<"new Boolean(true)">>),
   Obj2 = execute_script(Ctx, <<"new Boolean(false)">>),
   Obj3 = execute_script(Ctx, <<"new String('hello world!')">>),
-  ?assertMatch(true, execute_object(Ctx, Obj, <<"valueOf">>, null)),
-  ?assertMatch(false, execute_object(Ctx, Obj2, <<"valueOf">>, null)),
-  ?assertMatch(<<"hello world!">>, execute_object(Ctx, Obj3, <<"toString">>, null)).
+  ?assertMatch(true, execute_field(Ctx, Obj, <<"valueOf">>, null)),
+  ?assertMatch(false, execute_field(Ctx, Obj2, <<"valueOf">>, null)),
+  ?assertMatch(<<"hello world!">>, execute_field(Ctx, Obj3, <<"toString">>, null)).
 
 execute_script_test() ->
   application:start(erlang_v8),
