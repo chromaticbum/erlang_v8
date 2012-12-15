@@ -5,7 +5,7 @@
   new_vm/0,
   new_context/1,
   execute_script/2,
-  execute_object/4,
+  execute_field/4,
   call_respond/2
   ]).
 
@@ -21,7 +21,7 @@ new_context(Vm) ->
   ok = v8context_srv:set_context(Pid, Ctx),
   Ctx.
 
-execute_object(Context, JsObject, Field, Args) ->
+execute_field(Context, JsObject, Field, Args) ->
   v8nif:execute(Context, self(), {call, JsObject, Field, Args}),
   receive
     {result, Result} ->
