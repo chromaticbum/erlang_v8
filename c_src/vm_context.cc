@@ -107,11 +107,10 @@ void VmContext::ExecuteScript(JsCall *jsCall) {
 }
 
 void VmContext::FreeJsCall(JsCall *jsCall) {
-  //switch(jsCall->type) {
-    //case CALL:
-      //JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
-      //free(jsCallObject->field);
-  //}
+  if(jsCall->type == CALL) {
+      JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
+      free(jsCallObject->field);
+  }
   free(jsCall->data);
   free(jsCall);
 }
@@ -148,6 +147,7 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
 
 Persistent<Value> VmContext::Poll() {
   TRACE("VmContext::Poll\n");
+  ErlWrapper *erlWrapper;
 
   while(jsCall == NULL) {
     TRACE("VmContext::Poll - 3\n");
@@ -170,6 +170,9 @@ Persistent<Value> VmContext::Poll() {
     case EXIT:
       Exit(jsCall2);
       break;
+    case CALL_RESPOND:
+      erlWrapper = (ErlWrapper *)jsCall2->data;
+      return erlWrapper->MakeHandle();
     default:
       TRACE("VmContext::Poll - Default\n");
   }
@@ -228,6 +231,18 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
   }
 }
 
+ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
+    ErlNifPid pid, ERL_NIF_TERM term) {
+  ErlWrapper *erlWrapper = new ErlWrapper(this, term);
+
+  jsCall = (JsCall *)malloc(sizeof(JsCall));
+  jsCall->pid = pid;
+  jsCall->type = CALL_RESPOND;
+  jsCall->data = erlWrapper;
+
+  return enif_make_atom(env, "ok");
+}
+
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
@@ -243,7 +258,9 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendScript(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"call", length) == 0) {
           result = SendCall(env, pid, command[1], command[2], command[3]);
-        } else {
+        } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {
+          result = SendCallRespond(env, pid, command[1]);
+        }else {
           result = enif_make_badarg(env);
         }
       } else {

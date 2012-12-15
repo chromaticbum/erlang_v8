@@ -100,8 +100,8 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info({call, Fun, Args}, State) ->
-  Result = js_call(Fun, Args),
-  ev8:call_respond(State#state.context, Result),
+  Context = State#state.context,
+  spawn(ev8, call_respond, [Context, Fun, Args]),
   {noreply, State};
 handle_info(_Info, State) ->
   {noreply, State}.
@@ -134,8 +134,3 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
-
-js_call({Module, Fun}, Args) ->
-  apply(Module, Fun, Args);
-js_call(Fun, Args) ->
-  apply(Fun, Args).

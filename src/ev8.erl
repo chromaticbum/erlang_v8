@@ -6,7 +6,7 @@
   new_context/1,
   execute_script/2,
   execute_field/4,
-  call_respond/2
+  call_respond/3
   ]).
 
 start() ->
@@ -35,8 +35,15 @@ execute_script(Context, Source) ->
       Result
   end.
 
-call_respond(Context, Result) ->
-  v8nif:call_respond(Context, Result).
+call_respond(Context, Fun, Args) ->
+  Result = make_call(Fun, Args),
+  io:format("Call Respond: ~p(~p) -> ~p~n", [Fun, Args, Result]),
+  v8nif:execute(Context, self(), {call_respond, Result}).
+
+make_call({Module, Fun}, Args) ->
+  apply(Module, Fun, Args);
+make_call(Fun, Args) ->
+  apply(Fun, Args).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").

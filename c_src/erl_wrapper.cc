@@ -17,7 +17,7 @@ static Handle<Value> WrapFun(const Arguments &args) {
   ERL_NIF_TERM term = enif_make_tuple3(env,
       enif_make_atom(env, "call"),
       enif_make_copy(env, erlWrapper->term),
-      enif_make_list1(env, enif_make_atom(env, "ok"))
+      enif_make_list(env, 0)
       );
   enif_send(NULL, &(erlWrapper->vmContext->server), env, term);
   enif_clear_env(env);
@@ -44,7 +44,7 @@ Handle<External> ErlWrapper::MakeExternal() {
   return External::New(this);
 }
 
-Handle<Value> ErlWrapper::MakeHandle() {
+Persistent<Value> ErlWrapper::MakeHandle() {
   LHCS(vmContext);
   int _int;
   unsigned int _uint;
@@ -89,5 +89,5 @@ Handle<Value> ErlWrapper::MakeHandle() {
   persistent = Persistent<Value>::New(value);
   persistent.MakeWeak(NULL, ErlWrapperDestroy);
 
-  return value;
+  return persistent;
 }

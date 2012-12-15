@@ -37,7 +37,8 @@ typedef struct {
 typedef enum {
   EXIT,
   SCRIPT,
-  CALL
+  CALL,
+  CALL_RESPOND
 } JsCallType;
 
 typedef struct {
@@ -92,6 +93,9 @@ class VmContext {
         ERL_NIF_TERM obj,
         ERL_NIF_TERM field,
         ERL_NIF_TERM args);
+    ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM term);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
     JsCall *ResetJsCall();
     void FreeJsCall(JsCall *jsCall);
@@ -128,5 +132,5 @@ class ErlWrapper {
     ~ErlWrapper();
 
     Handle<External> MakeExternal();
-    Handle<Value> MakeHandle();
+    Persistent<Value> MakeHandle();
 };
