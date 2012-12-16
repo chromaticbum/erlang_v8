@@ -32,24 +32,19 @@ set_context_server(Context, Server) ->
   v8nif:set_context_server(Context, Server).
 
 set_field(Context, JsObject, Field, Term) ->
-  v8nif:execute(Context, self(), {set_field, JsObject, Field, Term}),
-  receive_result().
+  execute(Context, self(), {set_field, JsObject, Field, Term}).
 
 get_field(Context, JsObject, Field) ->
-  v8nif:execute(Context, self(), {get_field, JsObject, Field}),
-  receive_result().
+  execute(Context, self(), {get_field, JsObject, Field}).
 
 execute_field(Context, JsObject, Field, Args) ->
-  v8nif:execute(Context, self(), {call, JsObject, Field, Args}),
-  receive_result().
+  execute(Context, self(), {call, JsObject, Field, Args}).
 
 execute_script(Context, Source) ->
-  v8nif:execute(Context, self(), {script, Source}),
-  receive_result().
+  execute(Context, self(), {script, Source}).
 
 heap_statistics(Context) ->
-  v8nif:execute(Context, self(), {heap_statistics}),
-  receive_result().
+  execute(Context, self(), {heap_statistics}).
 
 call_respond(Context, Fun, Args) ->
   Result = make_call(Fun, Args),
@@ -61,37 +56,11 @@ make_call({Module, Fun}, Args) ->
 make_call(Fun, Args) ->
   apply(Fun, Args).
 
+execute(Context, Pid, Command) ->
+  v8nif:execute(Context, Pid, Command),
+  receive_result().
+
 receive_result() ->
   receive
     {result, Result} -> Result
   end.
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-execute_field_test() ->
-  Vm = new_vm(),
-  Ctx = new_context(Vm),
-
-  Obj = execute_script(Ctx, <<"new Boolean(true)">>),
-  Obj2 = execute_script(Ctx, <<"new Boolean(false)">>),
-  Obj3 = execute_script(Ctx, <<"new String('hello world!')">>),
-  ?assertMatch(true, execute_field(Ctx, Obj, <<"valueOf">>, null)),
-  ?assertMatch(false, execute_field(Ctx, Obj2, <<"valueOf">>, null)),
-  ?assertMatch(<<"hello world!">>, execute_field(Ctx, Obj3, <<"toString">>, null)).
-
-execute_script_test() ->
-  Vm = new_vm(),
-  Ctx = new_context(Vm),
-
-  ?assertMatch(undefined, execute_script(Ctx, <<"undefined">>)),
-  ?assertMatch(null, execute_script(Ctx, <<"null">>)),
-  ?assertMatch(22, execute_script(Ctx, <<"22">>)),
-  ?assertMatch(-22, execute_script(Ctx, <<"-22">>)),
-  ?assertMatch(22.2, execute_script(Ctx, <<"22.2">>)),
-  ?assertMatch(true, execute_script(Ctx, <<"true">>)),
-  ?assertMatch(false, execute_script(Ctx, <<"false">>)),
-  ?assertMatch(<<"hello">>, execute_script(Ctx, <<"'hello'">>)),
-  ?assertMatch(<<>>, execute_script(Ctx, <<"new Object()">>)).
-
--endif.
