@@ -40,7 +40,8 @@ typedef enum {
   CALL,
   CALL_RESPOND,
   SET_FIELD,
-  GET_FIELD
+  GET_FIELD,
+  HEAP_STATISTICS
 } JsCallType;
 
 typedef struct {
@@ -123,6 +124,8 @@ class VmContext {
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm);
+    ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
+        ErlNifPid pid);
     void PostResult(ErlNifPid pid, Local<Value> result);
     void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
@@ -131,6 +134,7 @@ class VmContext {
     void ExecuteCall(JsCall *jsCall);
     void ExecuteSetField(JsCall *jsCall);
     void ExecuteGetField(JsCall *jsCall);
+    void ExecuteHeapStatistics(JsCall *jsCall);
     Handle<Value> ExecuteCallRespond(JsCall *jsCall);
     void Exit(JsCall *jsCall);
 };

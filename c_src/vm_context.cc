@@ -189,6 +189,38 @@ Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
   return ErlWrapper::MakeHandle(this, term);
 }
 
+void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
+  LHCS(this);
+
+  HeapStatistics hs;
+  V8::GetHeapStatistics(&hs);
+
+  ErlNifEnv *env = enif_alloc_env();
+  ERL_NIF_TERM term = enif_make_list4(env,
+      enif_make_tuple2(env,
+        enif_make_atom(env, "total_heap_size"),
+        enif_make_uint(env, hs.total_heap_size())
+        ),
+      enif_make_tuple2(env,
+        enif_make_atom(env, "total_heap_size_executable"),
+        enif_make_uint(env, hs.total_heap_size_executable())
+        ),
+      enif_make_tuple2(env,
+        enif_make_atom(env, "used_heap_size"),
+        enif_make_uint(env, hs.used_heap_size())
+        ),
+      enif_make_tuple2(env,
+        enif_make_atom(env, "heap_size_limit"),
+        enif_make_uint(env, hs.heap_size_limit())
+        )
+      );
+  PostResult(jsCall->pid, term);
+  enif_clear_env(env);
+  enif_free_env(env);
+
+  free(jsCall);
+}
+
 Handle<Value> VmContext::Poll() {
   TRACE("VmContext::Poll\n");
 
@@ -215,6 +247,9 @@ Handle<Value> VmContext::Poll() {
       break;
     case GET_FIELD:
       ExecuteGetField(jsCall2);
+      break;
+    case HEAP_STATISTICS:
+      ExecuteHeapStatistics(jsCall2);
       break;
     case EXIT:
       Exit(jsCall2);
@@ -358,6 +393,15 @@ ERL_NIF_TERM VmContext::SendGetField(ErlNifEnv *env,
   }
 }
 
+ERL_NIF_TERM VmContext::SendHeapStatistics(ErlNifEnv *env,
+    ErlNifPid pid) {
+  jsCall = (JsCall *)malloc(sizeof(JsCall));
+  jsCall->pid = pid;
+  jsCall->type = HEAP_STATISTICS;
+
+  return enif_make_atom(env, "ok");
+}
+
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
@@ -379,6 +423,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendSetField(env, pid, command[1], command[2], command[3]);
         } else if(strncmp(buffer, (char *)"get_field", length) == 0) {
           result = SendGetField(env, pid, command[1], command[2]);
+        } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {
+          result = SendHeapStatistics(env, pid);
         } else {
           result = enif_make_badarg(env);
         }

@@ -10,6 +10,7 @@
   set_field/4,
   get_field/3,
   execute_field/4,
+  heap_statistics/1,
   call_respond/3
   ]).
 
@@ -32,31 +33,23 @@ set_context_server(Context, Server) ->
 
 set_field(Context, JsObject, Field, Term) ->
   v8nif:execute(Context, self(), {set_field, JsObject, Field, Term}),
-  receive
-    {result, Result} ->
-      Result
-  end.
+  receive_result().
 
 get_field(Context, JsObject, Field) ->
   v8nif:execute(Context, self(), {get_field, JsObject, Field}),
-  receive
-    {result, Result} ->
-      Result
-  end.
+  receive_result().
 
 execute_field(Context, JsObject, Field, Args) ->
   v8nif:execute(Context, self(), {call, JsObject, Field, Args}),
-  receive
-    {result, Result} ->
-      Result
-  end.
+  receive_result().
 
 execute_script(Context, Source) ->
   v8nif:execute(Context, self(), {script, Source}),
-  receive
-    {result, Result} ->
-      Result
-  end.
+  receive_result().
+
+heap_statistics(Context) ->
+  v8nif:execute(Context, self(), {heap_statistics}),
+  receive_result().
 
 call_respond(Context, Fun, Args) ->
   Result = make_call(Fun, Args),
@@ -67,6 +60,11 @@ make_call({Module, Fun}, Args) ->
   apply(Module, Fun, Args);
 make_call(Fun, Args) ->
   apply(Fun, Args).
+
+receive_result() ->
+  receive
+    {result, Result} -> Result
+  end.
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
