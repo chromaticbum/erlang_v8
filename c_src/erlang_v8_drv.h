@@ -65,6 +65,10 @@ typedef struct {
   char *field;
 } JsGetField;
 
+typedef struct {
+  ERL_NIF_TERM term;
+} JsCallRespond;
+
 class Vm {
   public:
     ErlNifEnv *env;
@@ -99,7 +103,7 @@ class VmContext {
     bool Run();
     void Stop();
     void RunLoop();
-    Persistent<Value> Poll();
+    Handle<Value> Poll();
     ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     ERL_NIF_TERM SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     ERL_NIF_TERM SendCall(ErlNifEnv *env,
@@ -127,6 +131,7 @@ class VmContext {
     void ExecuteCall(JsCall *jsCall);
     void ExecuteSetField(JsCall *jsCall);
     void ExecuteGetField(JsCall *jsCall);
+    Handle<Value> ExecuteCallRespond(JsCall *jsCall);
     void Exit(JsCall *jsCall);
 };
 
@@ -157,6 +162,7 @@ class ErlWrapper {
     ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term);
     ~ErlWrapper();
 
-    Handle<External> MakeExternal();
-    Persistent<Value> MakeHandle();
+    Local<External> MakeExternal();
+    static Local<Value> MakeHandle(VmContext *vmContext,
+        ERL_NIF_TERM term);
 };

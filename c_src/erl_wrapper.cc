@@ -38,13 +38,14 @@ ErlWrapper::~ErlWrapper() {
   enif_free_env(env);
 }
 
-Handle<External> ErlWrapper::MakeExternal() {
+Local<External> ErlWrapper::MakeExternal() {
   V8::AdjustAmountOfExternalAllocatedMemory(sizeof(ErlWrapper));
 
   return External::New(this);
 }
 
-Persistent<Value> ErlWrapper::MakeHandle() {
+Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
+        ERL_NIF_TERM term) {
   LHCS(vmContext);
   int _int;
   unsigned int _uint;
@@ -55,7 +56,8 @@ Persistent<Value> ErlWrapper::MakeHandle() {
   double _double;
   ErlNifBinary binary;
 
-  Handle<Value> value;
+  ErlNifEnv *env = enif_alloc_env();
+  Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
     char *buffer = (char *)malloc((_uint + 1) * sizeof(char));
     enif_get_atom(env, term, buffer, _uint + 1, ERL_NIF_LATIN1);
@@ -80,14 +82,16 @@ Persistent<Value> ErlWrapper::MakeHandle() {
     buffer[binary.size] = NULL;
     value = String::New(buffer);
   } else if(enif_is_fun(env, term)) {
-    Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, MakeExternal());
+    ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
+    Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else {
-    value = MakeExternal();
+    ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
+    value = erlWrapper->MakeExternal();
   }
 
-  persistent = Persistent<Value>::New(value);
-  persistent.MakeWeak(NULL, ErlWrapperDestroy);
+  enif_clear_env(env);
+  enif_free_env(env);
 
-  return persistent;
+  return value;
 }

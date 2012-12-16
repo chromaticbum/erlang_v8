@@ -179,9 +179,18 @@ void VmContext::ExecuteGetField(JsCall *jsCall) {
   free(jsCall);
 }
 
-Persistent<Value> VmContext::Poll() {
+Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
+  JsCallRespond *jsCallRespond = (JsCallRespond *)jsCall->data;
+  ERL_NIF_TERM term = jsCallRespond->term;
+
+  free(jsCallRespond);
+  free(jsCall);
+
+  return ErlWrapper::MakeHandle(this, term);
+}
+
+Handle<Value> VmContext::Poll() {
   TRACE("VmContext::Poll\n");
-  ErlWrapper *erlWrapper;
 
   while(jsCall == NULL) {
     TRACE("VmContext::Poll - 3\n");
@@ -211,8 +220,7 @@ Persistent<Value> VmContext::Poll() {
       Exit(jsCall2);
       break;
     case CALL_RESPOND:
-      erlWrapper = (ErlWrapper *)jsCall2->data;
-      return erlWrapper->MakeHandle();
+      return ExecuteCallRespond(jsCall2);
     default:
       TRACE("VmContext::Poll - Default\n");
   }
@@ -273,12 +281,13 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
 
 ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
     ErlNifPid pid, ERL_NIF_TERM term) {
-  ErlWrapper *erlWrapper = new ErlWrapper(this, term);
+  JsCallRespond *jsCallRespond = (JsCallRespond *)malloc(sizeof(JsCallRespond));
+  jsCallRespond->term = term;
 
   jsCall = (JsCall *)malloc(sizeof(JsCall));
   jsCall->pid = pid;
   jsCall->type = CALL_RESPOND;
-  jsCall->data = erlWrapper;
+  jsCall->data = jsCallRespond;
 
   return enif_make_atom(env, "ok");
 }
