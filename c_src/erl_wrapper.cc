@@ -38,10 +38,13 @@ ErlWrapper::~ErlWrapper() {
   enif_free_env(env);
 }
 
-Local<External> ErlWrapper::MakeExternal() {
+Persistent<External> ErlWrapper::MakeExternal() {
   V8::AdjustAmountOfExternalAllocatedMemory(sizeof(ErlWrapper));
+  Persistent<External> external = Persistent<External>::New(External::New(this));
 
-  return External::New(this);
+  external.MakeWeak(NULL, ErlWrapperDestroy);
+
+  return external;
 }
 
 Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
@@ -87,7 +90,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     value = fn->GetFunction();
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
-    value = erlWrapper->MakeExternal();
+    value = Local<External>::New(erlWrapper->MakeExternal());
   }
 
   enif_clear_env(env);

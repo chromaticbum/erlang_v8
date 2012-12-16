@@ -162,7 +162,7 @@ class ErlWrapper {
     ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term);
     ~ErlWrapper();
 
-    Local<External> MakeExternal();
+    Persistent<External> MakeExternal();
     static Local<Value> MakeHandle(VmContext *vmContext,
         ERL_NIF_TERM term);
 };
