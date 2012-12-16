@@ -144,6 +144,7 @@ void VmContext::Exit(JsCall *jsCall) {
 }
 
 void VmContext::ExecuteCall(JsCall *jsCall) {
+  TRACE("VmContext::ExecuteCall\n");
   LHCS(this);
   JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
   Handle<String> field = String::New(jsCallObject->field);
@@ -180,13 +181,18 @@ void VmContext::ExecuteGetField(JsCall *jsCall) {
 }
 
 Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
+  TRACE("VmContext::ExecuteCallRespond\n");
   JsCallRespond *jsCallRespond = (JsCallRespond *)jsCall->data;
   ERL_NIF_TERM term = jsCallRespond->term;
 
+  Handle<Value> value = ErlWrapper::MakeHandle(this, jsCallRespond->env, term);
+
+  enif_clear_env(jsCallRespond->env);
+  enif_free_env(jsCallRespond->env);
   free(jsCallRespond);
   free(jsCall);
 
-  return ErlWrapper::MakeHandle(this, term);
+  return value;
 }
 
 void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
@@ -317,7 +323,8 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
 ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
     ErlNifPid pid, ERL_NIF_TERM term) {
   JsCallRespond *jsCallRespond = (JsCallRespond *)malloc(sizeof(JsCallRespond));
-  jsCallRespond->term = term;
+  jsCallRespond->env = enif_alloc_env();
+  jsCallRespond->term = enif_make_copy(env, term);
 
   jsCall = (JsCall *)malloc(sizeof(JsCall));
   jsCall->pid = pid;

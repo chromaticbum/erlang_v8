@@ -23,7 +23,10 @@ bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
   if(value->IsObject()) {
     Handle<Object> object = value->ToObject();
     Handle<String> fieldStr = String::New(field);
-    Local<Value> value = ErlWrapper::MakeHandle(vmContext, term);
+    ErlNifEnv *env = enif_alloc_env();
+    Local<Value> value = ErlWrapper::MakeHandle(vmContext, env, term);
+    enif_clear_env(env);
+    enif_free_env(env);
     object->Set(fieldStr, value);
 
     return true;
@@ -40,10 +43,22 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
-    JsWrapper *jsWrapper = new JsWrapper(vmContext,
-        env,
-        Persistent<Value>::New(value));
-    return jsWrapper->resourceTerm;
+    if(value->IsArray()) {
+      Handle<Array> arr = Handle<Array>::Cast(value);
+      unsigned length = arr->Length();
+      ERL_NIF_TERM terms[length];
+
+      for(int i = 0; i < length; i++) {
+        terms[i] = MakeTerm(vmContext, env, arr->Get(i));
+      }
+
+      return enif_make_list_from_array(env, terms, length);
+    } else {
+      JsWrapper *jsWrapper = new JsWrapper(vmContext,
+          env,
+          Persistent<Value>::New(value));
+      return jsWrapper->resourceTerm;
+    }
   } else if(value->IsBoolean()) {
     if(value->IsTrue()) {
       return enif_make_atom(env, "true");

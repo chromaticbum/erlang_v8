@@ -67,6 +67,7 @@ typedef struct {
 } JsGetField;
 
 typedef struct {
+  ErlNifEnv *env;
   ERL_NIF_TERM term;
 } JsCallRespond;
 
@@ -168,5 +169,6 @@ class ErlWrapper {
 
     Persistent<External> MakeExternal();
     static Local<Value> MakeHandle(VmContext *vmContext,
+        ErlNifEnv *env,
         ERL_NIF_TERM term);
 };

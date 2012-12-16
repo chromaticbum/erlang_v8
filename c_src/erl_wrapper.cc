@@ -48,7 +48,8 @@ Persistent<External> ErlWrapper::MakeExternal() {
 }
 
 Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
-        ERL_NIF_TERM term) {
+    ErlNifEnv *env,
+    ERL_NIF_TERM term) {
   LHCS(vmContext);
   int _int;
   unsigned int _uint;
@@ -58,13 +59,25 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
   ErlNifUInt64 _uint64;
   double _double;
   ErlNifBinary binary;
+  ERL_NIF_TERM head, tail;
 
-  ErlNifEnv *env = enif_alloc_env();
   Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
     char *buffer = (char *)malloc((_uint + 1) * sizeof(char));
     enif_get_atom(env, term, buffer, _uint + 1, ERL_NIF_LATIN1);
-    value = String::New(buffer);
+
+    if(strncmp(buffer, (char *)"undefined", _uint) == 0) {
+      value = Local<Value>::New(Undefined());
+    } else if(strncmp(buffer, (char *)"null", _uint) == 0) {
+      value = Local<Value>::New(Null());
+    } else if(strncmp(buffer, (char *)"true", _uint) == 0) {
+      value = Local<Value>::New(True());
+    } else if(strncmp(buffer, (char *)"false", _uint) == 0) {
+      value = Local<Value>::New(False());
+    } else {
+      value = Local<Value>::New(Undefined());
+    }
+
     free(buffer);
   } else if(enif_get_double(env, term, &_double)) {
     value = Number::New(_double);
@@ -80,7 +93,18 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     value = Integer::NewFromUnsigned(_uint64);
   } else if(enif_get_ulong(env, term, &_ulong)) {
     value = Integer::NewFromUnsigned(_ulong);
-  } else if(enif_inspect_iolist_as_binary(env, term, &binary)) {
+  } else if(enif_get_list_length(env, term, &_uint)) {
+    tail = term;
+    Local<Array> arr = Array::New(_uint);
+
+    _uint = 0;
+    while(enif_get_list_cell(env, tail, &head, &tail)) {
+      arr->Set(_uint, MakeHandle(vmContext, env, head));
+      _uint++;
+    }
+
+    value = arr;
+  } else if(enif_inspect_binary(env, term, &binary)) {
     char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
     memcpy(buffer, binary.data, binary.size);
     buffer[binary.size] = NULL;
@@ -94,9 +118,6 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     value = Local<External>::New(erlWrapper->MakeExternal());
   }
-
-  enif_clear_env(env);
-  enif_free_env(env);
 
   return value;
 }
