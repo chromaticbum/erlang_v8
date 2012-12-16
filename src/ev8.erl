@@ -8,6 +8,7 @@
   set_context_server/2,
   execute_script/2,
   set_field/4,
+  get_field/3,
   execute_field/4,
   call_respond/3
   ]).
@@ -31,6 +32,13 @@ set_context_server(Context, Server) ->
 
 set_field(Context, JsObject, Field, Term) ->
   v8nif:execute(Context, self(), {set_field, JsObject, Field, Term}),
+  receive
+    {result, Result} ->
+      Result
+  end.
+
+get_field(Context, JsObject, Field) ->
+  v8nif:execute(Context, self(), {get_field, JsObject, Field}),
   receive
     {result, Result} ->
       Result

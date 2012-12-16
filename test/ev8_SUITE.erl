@@ -11,13 +11,13 @@
 -export([
   execute_script/1,
   execute_field/1,
-  set_field/1
+  fields/1
   ]).
 
 all() ->
   [execute_script,
    execute_field,
-   set_field].
+   fields].
 
 init_per_suite(Config) ->
   ev8:start(),
@@ -45,9 +45,35 @@ execute_script(Config) ->
   ok.
 
 execute_field(Config) ->
-  _C = ?config(context, Config),
+  C = ?config(context, Config),
+
+  Obj = ev8:execute_script(C, <<"new Object()">>),
+  ev8:set_field(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
+  <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, [ok]),
+  % TODO: allow passing of arguments
 
   ok.
 
-set_field(_Config) ->
+fields(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:execute_script(C, <<"new Object()">>),
+  ev8:set_field(C, Obj, <<"erlUndefined">>, undefined),
+  ev8:set_field(C, Obj, <<"erlNull">>, null),
+  ev8:set_field(C, Obj, <<"erlInt">>, 22),
+  ev8:set_field(C, Obj, <<"erlNegInt">>, -22),
+  ev8:set_field(C, Obj, <<"erlDouble">>, 22.2),
+  ev8:set_field(C, Obj, <<"erlTrue">>, true),
+  ev8:set_field(C, Obj, <<"erlFalse">>, false),
+  ev8:set_field(C, Obj, <<"erlBinary">>, <<"godzilla strikes">>),
+
+  %undefined = ev8:get_field(C, Obj, <<"erlUndefined">>),
+  %null = ev8:get_field(C, Obj, <<"erlNull">>),
+  22 = ev8:get_field(C, Obj, <<"erlInt">>),
+  -22 = ev8:get_field(C, Obj, <<"erlNegInt">>),
+  22.2 = ev8:get_field(C, Obj, <<"erlDouble">>),
+  %true = ev8:get_field(C, Obj, <<"erlTrue">>),
+  %false = ev8:get_field(C, Obj, <<"erlFalse">>),
+  <<"godzilla strikes">> = ev8:get_field(C, Obj, <<"erlBinary">>),
+
   ok.

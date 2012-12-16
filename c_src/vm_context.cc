@@ -82,7 +82,7 @@ void VmContext::Stop() {
   enif_thread_join(tid, &result);
 }
 
-void VmContext::PostResult(ErlNifPid pid, Persistent<Value> result) {
+void VmContext::PostResult(ErlNifPid pid, Local<Value> result) {
   TRACE("VmContext::PostResult\n");
   ErlNifEnv *env = enif_alloc_env();
   ERL_NIF_TERM term = enif_make_tuple2(env,
@@ -116,7 +116,7 @@ void VmContext::ExecuteScript(JsCall *jsCall) {
   char *sourceBuffer = (char *)jsCall->data;
   Handle<String> source = String::New(sourceBuffer);
   Handle<Script> script = Script::Compile(source);
-  Persistent<Value> result = Persistent<Value>::New(script->Run());
+  Local<Value> result = script->Run();
   TRACE("VmContext::ExecuteScript - 1\n");
   PostResult(jsCall->pid, result);
   TRACE("VmContext::ExecuteScript - 2\n");
@@ -148,9 +148,7 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
   JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
   Handle<String> field = String::New(jsCallObject->field);
   Handle<Function> fun = Local<Function>::Cast(jsCallObject->value->ToObject()->Get(field));
-  Persistent<Value> result = Persistent<Value>::New(
-      fun->Call(jsCallObject->value->ToObject(), 0, 0)
-    );
+  Local<Value> result = fun->Call(jsCallObject->value->ToObject(), 0, 0);
   PostResult(jsCall->pid, result);
 
   free(jsCallObject->field);
@@ -166,6 +164,18 @@ void VmContext::ExecuteSetField(JsCall *jsCall) {
 
   free(jsSetField->field);
   free(jsSetField);
+  free(jsCall);
+}
+
+void VmContext::ExecuteGetField(JsCall *jsCall) {
+  LHCS(this);
+
+  JsGetField *jsGetField = (JsGetField *)jsCall->data;
+  Local<Value> value = jsGetField->jsWrapper->Get(jsGetField->field);
+  PostResult(jsCall->pid, value);
+
+  free(jsGetField->field);
+  free(jsGetField);
   free(jsCall);
 }
 
@@ -193,6 +203,9 @@ Persistent<Value> VmContext::Poll() {
       break;
     case SET_FIELD:
       ExecuteSetField(jsCall2);
+      break;
+    case GET_FIELD:
+      ExecuteGetField(jsCall2);
       break;
     case EXIT:
       Exit(jsCall2);
@@ -304,6 +317,38 @@ ERL_NIF_TERM VmContext::SendSetField(ErlNifEnv *env,
   }
 }
 
+ERL_NIF_TERM VmContext::SendGetField(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM wrapperTerm,
+        ERL_NIF_TERM fieldTerm) {
+  ErlJsWrapper *erlJsWrapper;
+
+  if(enif_get_resource(env, wrapperTerm, JsWrapperResource, (void **)(&erlJsWrapper))) {
+    ErlNifBinary binary;
+
+    if(enif_inspect_binary(env, fieldTerm, &binary)) {
+      char *field = (char *)malloc((binary.size + 1) * sizeof(char));
+      memcpy(field, binary.data, binary.size);
+      field[binary.size] = NULL;
+
+      JsGetField *jsGetField = (JsGetField *)malloc(sizeof(JsGetField));
+      jsGetField->jsWrapper = erlJsWrapper->jsWrapper;
+      jsGetField->field = field;
+
+      jsCall = (JsCall *)malloc(sizeof(JsCall));
+      jsCall->pid = pid;
+      jsCall->type = GET_FIELD;
+      jsCall->data = jsGetField;
+
+      return enif_make_atom(env, "ok");
+    } else {
+      return enif_make_badarg(env);
+    }
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
@@ -323,6 +368,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendCallRespond(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"set_field", length) == 0) {
           result = SendSetField(env, pid, command[1], command[2], command[3]);
+        } else if(strncmp(buffer, (char *)"get_field", length) == 0) {
+          result = SendGetField(env, pid, command[1], command[2]);
         } else {
           result = enif_make_badarg(env);
         }

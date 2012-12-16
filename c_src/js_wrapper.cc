@@ -20,8 +20,6 @@ JsWrapper::~JsWrapper() {
 }
 
 bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
-  LHCS(vmContext);
-
   if(value->IsObject()) {
     Handle<Object> object = value->ToObject();
     Handle<String> fieldStr = String::New(field);
@@ -34,9 +32,13 @@ bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
   }
 }
 
+Local<Value> JsWrapper::Get(char *field) {
+  return value->ToObject()->Get(String::New(field));
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
-    Handle<Value> value) {
+    Local<Value> value) {
   if(value->IsObject()) {
     JsWrapper *jsWrapper = new JsWrapper(vmContext,
         env,

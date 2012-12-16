@@ -39,7 +39,8 @@ typedef enum {
   SCRIPT,
   CALL,
   CALL_RESPOND,
-  SET_FIELD
+  SET_FIELD,
+  GET_FIELD
 } JsCallType;
 
 typedef struct {
@@ -58,6 +59,11 @@ typedef struct {
   char *field;
   ERL_NIF_TERM term;
 } JsSetField;
+
+typedef struct {
+  JsWrapper *jsWrapper;
+  char *field;
+} JsGetField;
 
 class Vm {
   public:
@@ -109,13 +115,18 @@ class VmContext {
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm,
         ERL_NIF_TERM term);
-    void PostResult(ErlNifPid pid, Persistent<Value> result);
+    ERL_NIF_TERM SendGetField(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM wrapperTerm,
+        ERL_NIF_TERM fieldTerm);
+    void PostResult(ErlNifPid pid, Local<Value> result);
     void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
 
     void ExecuteScript(JsCall *jsCall);
     void ExecuteCall(JsCall *jsCall);
     void ExecuteSetField(JsCall *jsCall);
+    void ExecuteGetField(JsCall *jsCall);
     void Exit(JsCall *jsCall);
 };
 
@@ -130,9 +141,10 @@ class JsWrapper {
     ~JsWrapper();
 
     bool Set(char *field, ERL_NIF_TERM term);
+    Local<Value> Get(char *field);
     static ERL_NIF_TERM MakeTerm(VmContext *vmContext,
         ErlNifEnv *env,
-        Handle<Value> value);
+        Local<Value> value);
 };
 
 class ErlWrapper {
