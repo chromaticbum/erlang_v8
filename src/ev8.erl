@@ -2,6 +2,7 @@
 
 -export([
   start/0,
+  stop/0,
   new_vm/0,
   new_context/1,
   set_context_server/2,
@@ -13,6 +14,9 @@
 
 start() ->
   application:start(erlang_v8).
+
+stop() ->
+  application:stop(erlang_v8).
 
 new_vm() ->
   v8nif:new_vm().
@@ -59,8 +63,7 @@ make_call(Fun, Args) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-execute_object_test() ->
-  application:start(erlang_v8),
+execute_field_test() ->
   Vm = new_vm(),
   Ctx = new_context(Vm),
 
@@ -72,7 +75,6 @@ execute_object_test() ->
   ?assertMatch(<<"hello world!">>, execute_field(Ctx, Obj3, <<"toString">>, null)).
 
 execute_script_test() ->
-  application:start(erlang_v8),
   Vm = new_vm(),
   Ctx = new_context(Vm),
 

@@ -2,4 +2,5 @@ c_src/*.o
 priv/*.so
 ebin/
 logs/
+test/*.beam
 .eunit/
