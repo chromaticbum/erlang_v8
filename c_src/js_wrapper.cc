@@ -43,22 +43,10 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
-    if(value->IsArray()) {
-      Handle<Array> arr = Handle<Array>::Cast(value);
-      unsigned length = arr->Length();
-      ERL_NIF_TERM terms[length];
-
-      for(int i = 0; i < length; i++) {
-        terms[i] = MakeTerm(vmContext, env, arr->Get(i));
-      }
-
-      return enif_make_list_from_array(env, terms, length);
-    } else {
-      JsWrapper *jsWrapper = new JsWrapper(vmContext,
-          env,
-          Persistent<Value>::New(value));
-      return jsWrapper->resourceTerm;
-    }
+    JsWrapper *jsWrapper = new JsWrapper(vmContext,
+        env,
+        Persistent<Value>::New(value));
+    return jsWrapper->resourceTerm;
   } else if(value->IsBoolean()) {
     if(value->IsTrue()) {
       return enif_make_atom(env, "true");

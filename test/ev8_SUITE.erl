@@ -76,6 +76,6 @@ fields(Config) ->
   true = ev8:get_field(C, Obj, <<"erlTrue">>),
   false = ev8:get_field(C, Obj, <<"erlFalse">>),
   <<"godzilla strikes">> = ev8:get_field(C, Obj, <<"erlBinary">>),
-  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get_field(C, Obj, <<"erlList">>),
+  <<>> = ev8:get_field(C, Obj, <<"erlList">>),
 
   ok.
