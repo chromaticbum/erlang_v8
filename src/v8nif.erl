@@ -6,8 +6,7 @@
   new_vm/0,
   new_context/1,
   set_context_server/2,
-  execute/3,
-  set_field/3
+  execute/3
   ]).
 
 -include("erlang_v8.hrl").
@@ -41,7 +40,4 @@ set_context_server(_Ctx, _Server) ->
   | integer()
   | list().
 execute(_Ctx, _Pid, _Command) ->
-  error(not_loaded).
-
-set_field(_JsWrapper, _Field, _Term) ->
   error(not_loaded).

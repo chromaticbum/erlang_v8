@@ -38,7 +38,8 @@ typedef enum {
   EXIT,
   SCRIPT,
   CALL,
-  CALL_RESPOND
+  CALL_RESPOND,
+  SET_FIELD
 } JsCallType;
 
 typedef struct {
@@ -51,6 +52,12 @@ typedef struct {
   Persistent<Value> value;
   char *field;
 } JsCallObject;
+
+typedef struct {
+  JsWrapper *jsWrapper;
+  char *field;
+  ERL_NIF_TERM term;
+} JsSetField;
 
 class Vm {
   public:
@@ -97,12 +104,18 @@ class VmContext {
     ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM term);
+    ERL_NIF_TERM SendSetField(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM wrapperTerm,
+        ERL_NIF_TERM fieldTerm,
+        ERL_NIF_TERM term);
     void PostResult(ErlNifPid pid, Persistent<Value> result);
+    void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
-    void FreeJsCall(JsCall *jsCall);
 
     void ExecuteScript(JsCall *jsCall);
     void ExecuteCall(JsCall *jsCall);
+    void ExecuteSetField(JsCall *jsCall);
     void Exit(JsCall *jsCall);
 };
 
