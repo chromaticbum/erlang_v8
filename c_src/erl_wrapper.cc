@@ -65,6 +65,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     char *buffer = (char *)malloc((_uint + 1) * sizeof(char));
     enif_get_atom(env, term, buffer, _uint + 1, ERL_NIF_LATIN1);
     value = String::New(buffer);
+    free(buffer);
   } else if(enif_get_double(env, term, &_double)) {
     value = Number::New(_double);
   } else if(enif_get_int(env, term, &_int)) {
@@ -84,6 +85,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     memcpy(buffer, binary.data, binary.size);
     buffer[binary.size] = NULL;
     value = String::New(buffer);
+    free(buffer);
   } else if(enif_is_fun(env, term)) {
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());

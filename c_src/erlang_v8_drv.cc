@@ -92,6 +92,42 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
   }
 }
 
+static ERL_NIF_TERM GetHeapStatistics(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlVmContext *erlVmContext;
+
+  if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
+    VmContext *vmContext = erlVmContext->vmContext;
+
+    LHCS(vmContext);
+
+    HeapStatistics hs;
+    V8::GetHeapStatistics(&hs);
+
+    return enif_make_list4(env,
+        enif_make_tuple2(env,
+          enif_make_atom(env, "total_heap_size"),
+          enif_make_uint(env, hs.total_heap_size())
+          ),
+        enif_make_tuple2(env,
+          enif_make_atom(env, "total_heap_size_executable"),
+          enif_make_uint(env, hs.total_heap_size_executable())
+          ),
+        enif_make_tuple2(env,
+          enif_make_atom(env, "used_heap_size"),
+          enif_make_uint(env, hs.used_heap_size())
+          ),
+        enif_make_tuple2(env,
+          enif_make_atom(env, "heap_size_limit"),
+          enif_make_uint(env, hs.heap_size_limit())
+          )
+        );
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
 static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
   VmResource = enif_open_resource_type(env, NULL, "erlang_v8_VmResource", VmDestroy, (ErlNifResourceFlags) (ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER), NULL);
   VmContextResource = enif_open_resource_type(env, NULL, "erlang_v8_VmContextResource", VmContextDestroy, (ErlNifResourceFlags) (ERL_NIF_RT_CREATE | ERL_NIF_RT_TAKEOVER), NULL);
@@ -104,7 +140,8 @@ static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
   {"new_context", 1, NewContext},
   {"set_context_server", 2, SetContextServer},
-  {"execute", 3, Execute}
+  {"execute", 3, Execute},
+  {"heap_statistics", 1, GetHeapStatistics}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)

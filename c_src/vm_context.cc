@@ -385,6 +385,7 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
       } else {
         result = enif_make_badarg(env);
       }
+      free(buffer);
     } else {
       result = enif_make_badarg(env);
     }
