@@ -4,3 +4,5 @@ ebin/
 logs/
 test/*.beam
 .eunit/
+
+erl_crash.dump
