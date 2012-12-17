@@ -10,6 +10,7 @@
   set_field/4,
   get_field/3,
   execute_field/4,
+  native/2,
   heap_statistics/1,
   call_respond/3
   ]).
@@ -42,6 +43,9 @@ execute_field(Context, JsObject, Field, Args) ->
 
 execute_script(Context, Source) ->
   execute(Context, self(), {script, Source}).
+
+native(Context, JsObject) ->
+  execute(Context, self(), {erl_native, JsObject}).
 
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).

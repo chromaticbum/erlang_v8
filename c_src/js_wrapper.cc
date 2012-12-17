@@ -39,6 +39,24 @@ Local<Value> JsWrapper::Get(char *field) {
   return value->ToObject()->Get(String::New(field));
 }
 
+ERL_NIF_TERM JsWrapper::MakeNativeTerm(VmContext *vmContext,
+    ErlNifEnv *env,
+    Local<Value> value) {
+  if(value->IsArray()) {
+    Handle<Array> arr = Handle<Array>::Cast(value);
+    unsigned length = arr->Length();
+    ERL_NIF_TERM terms[length];
+
+    for(int i = 0; i < length; i++) {
+      terms[i] = JsWrapper::MakeNativeTerm(vmContext, env, arr->Get(i));
+    }
+
+    return enif_make_list_from_array(env, terms, length);
+  } else {
+    return MakeTerm(vmContext, env, value);
+  }
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
     Local<Value> value) {

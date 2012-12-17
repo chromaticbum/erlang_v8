@@ -41,6 +41,7 @@ typedef enum {
   CALL_RESPOND,
   SET_FIELD,
   GET_FIELD,
+  ERL_NATIVE,
   HEAP_STATISTICS
 } JsCallType;
 
@@ -125,6 +126,9 @@ class VmContext {
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm);
+    ERL_NIF_TERM SendErlNative(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM term);
     ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
         ErlNifPid pid);
     void PostResult(ErlNifPid pid, Local<Value> result);
@@ -135,6 +139,7 @@ class VmContext {
     void ExecuteCall(JsCall *jsCall);
     void ExecuteSetField(JsCall *jsCall);
     void ExecuteGetField(JsCall *jsCall);
+    void ExecuteErlNative(JsCall *jsCall);
     void ExecuteHeapStatistics(JsCall *jsCall);
     Handle<Value> ExecuteCallRespond(JsCall *jsCall);
     void Exit(JsCall *jsCall);
@@ -153,6 +158,9 @@ class JsWrapper {
     bool Set(char *field, ERL_NIF_TERM term);
     Local<Value> Get(char *field);
     static ERL_NIF_TERM MakeTerm(VmContext *vmContext,
+        ErlNifEnv *env,
+        Local<Value> value);
+    static ERL_NIF_TERM MakeNativeTerm(VmContext *vmContext,
         ErlNifEnv *env,
         Local<Value> value);
 };

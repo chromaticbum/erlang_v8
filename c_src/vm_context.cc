@@ -195,6 +195,21 @@ Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
   return value;
 }
 
+void VmContext::ExecuteErlNative(JsCall *jsCall) {
+  LHCS(this);
+  TRACE("VmContext::ExecuteErlNative\n");
+  JsWrapper *jsWrapper = (JsWrapper *)jsCall->data;
+  Local<Value> value = Local<Value>::New(jsWrapper->value);
+  ErlNifEnv *env = enif_alloc_env();
+  ERL_NIF_TERM term = JsWrapper::MakeNativeTerm(this, env, value);
+
+  PostResult(jsCall->pid, term);
+
+  enif_clear_env(env);
+  enif_free_env(env);
+  free(jsCall);
+}
+
 void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
   LHCS(this);
 
@@ -253,6 +268,9 @@ Handle<Value> VmContext::Poll() {
       break;
     case GET_FIELD:
       ExecuteGetField(jsCall2);
+      break;
+    case ERL_NATIVE:
+      ExecuteErlNative(jsCall2);
       break;
     case HEAP_STATISTICS:
       ExecuteHeapStatistics(jsCall2);
@@ -409,6 +427,24 @@ ERL_NIF_TERM VmContext::SendHeapStatistics(ErlNifEnv *env,
   return enif_make_atom(env, "ok");
 }
 
+ERL_NIF_TERM VmContext::SendErlNative(ErlNifEnv *env,
+    ErlNifPid pid,
+    ERL_NIF_TERM term) {
+  TRACE("VmContext::SendErlNative\n");
+  ErlJsWrapper *erlJsWrapper;
+
+  if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
+    jsCall = (JsCall *)malloc(sizeof(JsCall));
+    jsCall->pid = pid;
+    jsCall->type = ERL_NATIVE;
+    jsCall->data = erlJsWrapper->jsWrapper;
+
+    return enif_make_atom(env, "ok");
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
@@ -432,6 +468,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendGetField(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {
           result = SendHeapStatistics(env, pid);
+        } else if(strncmp(buffer, (char *)"erl_native", length) == 0) {
+          result = SendErlNative(env, pid, command[1]);
         } else {
           result = enif_make_badarg(env);
         }
