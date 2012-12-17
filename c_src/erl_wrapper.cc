@@ -93,17 +93,6 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     value = Integer::NewFromUnsigned(_uint64);
   } else if(enif_get_ulong(env, term, &_ulong)) {
     value = Integer::NewFromUnsigned(_ulong);
-  } else if(enif_get_list_length(env, term, &_uint)) {
-    tail = term;
-    Local<Array> arr = Array::New(_uint);
-
-    _uint = 0;
-    while(enif_get_list_cell(env, tail, &head, &tail)) {
-      arr->Set(_uint, MakeHandle(vmContext, env, head));
-      _uint++;
-    }
-
-    value = arr;
   } else if(enif_inspect_binary(env, term, &binary)) {
     char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
     memcpy(buffer, binary.data, binary.size);
