@@ -64,6 +64,20 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
       ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
 
       return enif_make_copy(env, erlWrapper->term);
+    } else if(value->IsNativeError()) {
+      TRACE("NATIVE ERROR\n");
+      Local<String> detail = value->ToDetailString();
+      String::AsciiValue ascii(detail);
+      ERL_NIF_TERM binary;
+      char *buffer = (char *)enif_make_new_binary(env, strlen(*ascii), &binary);
+      memcpy(buffer, *ascii, strlen(*ascii));
+
+      return enif_make_tuple2(env,
+          enif_make_atom(env, "error"),
+          enif_make_tuple2(env,
+            enif_make_atom(env, "js_error"),
+            binary)
+          );
     } else {
       JsWrapper *jsWrapper = new JsWrapper(vmContext,
           env,
@@ -94,7 +108,6 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
   } else if(value->IsNull()) {
     return enif_make_atom(env, "null");
   } else {
-    TRACE("WTF UNDEFINED\n");
     // Must be undefined
 
     return enif_make_atom(env, "undefined");

@@ -53,7 +53,12 @@ heap_statistics(Context) ->
 call_respond(Context, Fun, Args) ->
   Result = make_call(Fun, Args),
   io:format("Call Respond: ~p(~p) -> ~p~n", [Fun, Args, Result]),
-  v8nif:execute(Context, self(), {call_respond, Result}).
+  send_response(Context, Result).
+
+send_response(Context, {error, Reason}) ->
+  v8nif:execute(Context, self(), {call_respond, {error, Reason}});
+send_response(Context, Result) ->
+  v8nif:execute(Context, self(), {call_respond, {ok, Result}}).
 
 make_call({Module, Fun}, Args) ->
   apply(Module, Fun, Args);

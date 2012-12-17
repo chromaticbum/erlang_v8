@@ -1,10 +1,11 @@
--module(v8context_srv).
+-module(v8call_srv).
 
 -behaviour(gen_server).
 
 %% API
 -export([start_link/1,
-         create/1]).
+        create/1,
+        call/3]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -21,8 +22,8 @@
 %%% API
 %%%===================================================================
 
-create(Context) ->
-  v8context_sup:start_child(Context).
+call(Pid, Fun, Args) ->
+  gen_server:cast(Pid, {call, Fun, Args}).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -33,6 +34,9 @@ create(Context) ->
 %%--------------------------------------------------------------------
 start_link(Context) ->
   gen_server:start_link(?MODULE, [Context], []).
+
+create(Context) ->
+  v8call_sup:start_child(Context).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -50,7 +54,6 @@ start_link(Context) ->
 %% @end
 %%--------------------------------------------------------------------
 init([Context]) ->
-  ev8:set_context_server(Context, self()),
   {ok, #state{
       context = Context}}.
 
@@ -82,6 +85,10 @@ handle_call(_Request, _From, State) ->
 %%                                  {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_cast({call, Fun, Args}, State) ->
+  Context = State#state.context,
+  ev8:call_respond(Context, Fun, Args),
+  {noreply, State};
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -95,12 +102,6 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info({call, Fun, Args}, State) ->
-  io:format("Calle: ~p~n", [Args]),
-  Context = State#state.context,
-  {ok, Pid} = v8call_srv:create(Context),
-  v8call_srv:call(Pid, Fun, Args),
-  {noreply, State};
 handle_info(_Info, State) ->
   {noreply, State}.
 
@@ -115,8 +116,11 @@ handle_info(_Info, State) ->
 %% @spec terminate(Reason, State) -> void()
 %% @end
 %%--------------------------------------------------------------------
-terminate(Reason, _State) ->
-  io:format("EXIT WITH REASON: ~p~n", [Reason]),
+terminate({{badarity, _}, _}, State) ->
+  Context = State#state.context,
+  v8nif:execute(Context, self(), {call_respond, {error, badarity}}),
+  ok;
+terminate(_Reason, _State) ->
   ok.
 
 %%--------------------------------------------------------------------

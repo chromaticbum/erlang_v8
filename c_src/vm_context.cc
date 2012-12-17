@@ -153,6 +153,7 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
   unsigned length;
   erlArgs = jsCallObject->args;
   Handle<String> field = String::New(jsCallObject->field);
+  // TODO error handling if not a function
   Handle<Function> fun = Local<Function>::Cast(jsCallObject->value->ToObject()->Get(field));
 
   if(enif_get_list_length(env, erlArgs, &length)) {
@@ -212,9 +213,33 @@ void VmContext::ExecuteGetField(JsCall *jsCall) {
 Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
   TRACE("VmContext::ExecuteCallRespond\n");
   JsCallRespond *jsCallRespond = (JsCallRespond *)jsCall->data;
+  ErlNifEnv *env = jsCallRespond->env;
+  Handle<Value> value;
   ERL_NIF_TERM term = jsCallRespond->term;
+  const ERL_NIF_TERM *terms;
+  int arity;
+  unsigned length;
 
-  Handle<Value> value = ErlWrapper::MakeHandle(this, jsCallRespond->env, term);
+  if(enif_get_tuple(env, term, &arity, &terms)) {
+    TRACE("WE HAVE TUPLE\n");
+
+    if(arity == 2 && enif_get_atom_length(env, terms[0], &length, ERL_NIF_LATIN1)) {
+      char *buffer = (char *)malloc((length + 1) * sizeof(char));
+      enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1);
+      if(strncmp(buffer, (char *)"ok", length) == 0) {
+        value = ErlWrapper::MakeHandle(this, env, terms[1]);
+      } else if(strncmp(buffer, (char *)"error", length) == 0) {
+        value = Exception::Error(String::New("erlang function returned error"));
+      } else {
+        value = Exception::Error(String::New("erlang function returned error"));
+      }
+    } else {
+      value = Exception::Error(String::New("erlang function returned error"));
+    }
+  } else {
+    value = Exception::Error(String::New("erlang function returned error"));
+    // TODO handle error condition
+  }
 
   enif_clear_env(jsCallRespond->env);
   enif_free_env(jsCallRespond->env);
