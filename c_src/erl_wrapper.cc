@@ -1,7 +1,8 @@
 #include "erlang_v8_drv.h"
 
 static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
-  Handle<External> external = Persistent<External>::Cast(value);
+  TRACE("ErlWrapperDestroy\n");
+  Handle<External> external = Handle<External>::Cast(value);
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
   value.Dispose();
   V8::AdjustAmountOfExternalAllocatedMemory((intptr_t)(-sizeof(ErlWrapper)));
@@ -59,7 +60,6 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
   ErlNifUInt64 _uint64;
   double _double;
   ErlNifBinary binary;
-  ERL_NIF_TERM head, tail;
 
   Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
@@ -104,6 +104,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else {
+    TRACE("MakeHandle something else\n");
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     value = Local<External>::New(erlWrapper->MakeExternal());
   }

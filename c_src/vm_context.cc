@@ -160,15 +160,18 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
 void VmContext::ExecuteSetField(JsCall *jsCall) {
   LHCS(this);
   JsSetField *jsSetField = (JsSetField *)jsCall->data;
-  jsSetField->jsWrapper->Set(jsSetField->field, jsSetField->term);
-  PostResult(jsCall->pid, jsSetField->term);
+  ERL_NIF_TERM term = jsSetField->jsWrapper->Set(jsSetField->env, jsSetField->field, jsSetField->term);
+  PostResult(jsCall->pid, term);
 
+  enif_clear_env(jsSetField->env);
+  enif_free_env(jsSetField->env);
   free(jsSetField->field);
   free(jsSetField);
   free(jsCall);
 }
 
 void VmContext::ExecuteGetField(JsCall *jsCall) {
+  TRACE("VmContext::ExecuteGetField\n");
   LHCS(this);
 
   JsGetField *jsGetField = (JsGetField *)jsCall->data;
@@ -370,7 +373,8 @@ ERL_NIF_TERM VmContext::SendSetField(ErlNifEnv *env,
       JsSetField *jsSetField = (JsSetField *)malloc(sizeof(JsSetField));
       jsSetField->jsWrapper = erlJsWrapper->jsWrapper;
       jsSetField->field = field;
-      jsSetField->term = term;
+      jsSetField->env = enif_alloc_env();
+      jsSetField->term = enif_make_copy(jsSetField->env, term);
 
       jsCall = (JsCall *)malloc(sizeof(JsCall));
       jsCall->pid = pid;

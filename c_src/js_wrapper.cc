@@ -19,19 +19,17 @@ JsWrapper::~JsWrapper() {
   enif_release_resource(vmContext->erlVmContext);
 }
 
-bool JsWrapper::Set(char *field, ERL_NIF_TERM term) {
+ERL_NIF_TERM JsWrapper::Set(ErlNifEnv *env, char *field, ERL_NIF_TERM term) {
   if(value->IsObject()) {
     Handle<Object> object = value->ToObject();
     Handle<String> fieldStr = String::New(field);
-    ErlNifEnv *env = enif_alloc_env();
     Local<Value> value = ErlWrapper::MakeHandle(vmContext, env, term);
-    enif_clear_env(env);
-    enif_free_env(env);
+
     object->Set(fieldStr, value);
 
-    return true;
+    return MakeTerm(vmContext, env, object->Get(fieldStr));
   } else {
-    return false;
+    return enif_make_badarg(env);
   }
 }
 
@@ -61,10 +59,17 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
-    JsWrapper *jsWrapper = new JsWrapper(vmContext,
-        env,
-        Persistent<Value>::New(value));
-    return jsWrapper->resourceTerm;
+    if(value->IsExternal()) {
+      Handle<External> external = Handle<External>::Cast(value);
+      ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+
+      return enif_make_copy(env, erlWrapper->term);
+    } else {
+      JsWrapper *jsWrapper = new JsWrapper(vmContext,
+          env,
+          Persistent<Value>::New(value));
+      return jsWrapper->resourceTerm;
+    }
   } else if(value->IsBoolean()) {
     if(value->IsTrue()) {
       return enif_make_atom(env, "true");
@@ -87,8 +92,6 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     memcpy(buffer, *ascii, strlen(*ascii));
 
     return binary;
-  } else if(value->IsExternal()) {
-    return enif_make_atom(env, "external");
   } else if(value->IsNull()) {
     return enif_make_atom(env, "null");
   } else {

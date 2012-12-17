@@ -59,6 +59,7 @@ typedef struct {
 typedef struct {
   JsWrapper *jsWrapper;
   char *field;
+  ErlNifEnv *env;
   ERL_NIF_TERM term;
 } JsSetField;
 
@@ -155,7 +156,7 @@ class JsWrapper {
     JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _value);
     ~JsWrapper();
 
-    bool Set(char *field, ERL_NIF_TERM term);
+    ERL_NIF_TERM Set(ErlNifEnv *env, char *field, ERL_NIF_TERM term);
     Local<Value> Get(char *field);
     static ERL_NIF_TERM MakeTerm(VmContext *vmContext,
         ErlNifEnv *env,

@@ -11,13 +11,15 @@
 -export([
   execute_script/1,
   execute_field/1,
-  fields/1
+  fields/1,
+  to_term/1
   ]).
 
 all() ->
   [execute_script,
    execute_field,
-   fields].
+   fields,
+   to_term].
 
 init_per_suite(Config) ->
   ev8:start(),
@@ -76,6 +78,14 @@ fields(Config) ->
   true = ev8:get_field(C, Obj, <<"erlTrue">>),
   false = ev8:get_field(C, Obj, <<"erlFalse">>),
   <<"godzilla strikes">> = ev8:get_field(C, Obj, <<"erlBinary">>),
-  <<>> = ev8:get_field(C, Obj, <<"erlList">>),
+  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get_field(C, Obj, <<"erlList">>),
 
+  ok.
+
+to_term(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:execute_script(C, <<"new Object()">>),
+  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:set_field(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
+  
   ok.
