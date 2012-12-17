@@ -96,6 +96,7 @@ handle_cast(_Msg, State) ->
 %% @end
 %%--------------------------------------------------------------------
 handle_info({call, Fun, Args}, State) ->
+  io:format("Calle: ~p~n", [Args]),
   Context = State#state.context,
   spawn(ev8, call_respond, [Context, Fun, Args]),
   {noreply, State};

@@ -14,13 +14,20 @@ static Handle<Value> WrapFun(const Arguments &args) {
   Handle<External> external = Local<External>::Cast(args.Data());
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
   ErlNifEnv *env = enif_alloc_env();
+  unsigned length = args.Length();
+  ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
+
+  for(int i = 0; i < length; i++) {
+    terms[i] = JsWrapper::MakeTerm(erlWrapper->vmContext, env, args[i]);
+  }
 
   ERL_NIF_TERM term = enif_make_tuple3(env,
       enif_make_atom(env, "call"),
       enif_make_copy(env, erlWrapper->term),
-      enif_make_list(env, 0)
+      enif_make_list_from_array(env, terms, length)
       );
   enif_send(NULL, &(erlWrapper->vmContext->server), env, term);
+  free(terms);
   enif_clear_env(env);
   enif_free_env(env);
   // TODO error handling
@@ -51,7 +58,6 @@ Persistent<External> ErlWrapper::MakeExternal() {
 Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     ErlNifEnv *env,
     ERL_NIF_TERM term) {
-  LHCS(vmContext);
   int _int;
   unsigned int _uint;
   long _long;
@@ -104,7 +110,6 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else {
-    TRACE("MakeHandle something else\n");
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     value = Local<External>::New(erlWrapper->MakeExternal());
   }

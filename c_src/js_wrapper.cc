@@ -76,15 +76,14 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     } else {
       return enif_make_atom(env, "false");
     }
+  } else if(value->IsInt32()) {
+    TRACE("MAKE INT\n");
+    return enif_make_int(env, value->Int32Value());
+  } else if(value->IsUint32()) {
+    return enif_make_uint(env, value->Uint32Value());
   } else if(value->IsNumber()) {
-    if(value->IsInt32()) {
-      return enif_make_int(env, value->Int32Value());
-    } else if(value->IsUint32()) {
-      return enif_make_uint(env, value->Uint32Value());
-    } else {
-      // Must be a double
-      return enif_make_double(env, value->NumberValue());
-    }
+    // Must be a double
+    return enif_make_double(env, value->NumberValue());
   } else if(value->IsString()) {
     String::AsciiValue ascii(value);
     ERL_NIF_TERM binary;
@@ -95,6 +94,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
   } else if(value->IsNull()) {
     return enif_make_atom(env, "null");
   } else {
+    TRACE("WTF UNDEFINED\n");
     // Must be undefined
 
     return enif_make_atom(env, "undefined");

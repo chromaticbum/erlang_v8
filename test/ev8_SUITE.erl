@@ -51,7 +51,9 @@ execute_field(Config) ->
 
   Obj = ev8:execute_script(C, <<"new Object()">>),
   ev8:set_field(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
-  <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, [ok]),
+  <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, []),
+  ev8:set_field(C, Obj, <<"erlFunArgs">>, fun(A, B) -> A + B end),
+  42 = ev8:execute_field(C, Obj, <<"erlFunArgs">>, [32, 10]),
   % TODO: allow passing of arguments
 
   ok.

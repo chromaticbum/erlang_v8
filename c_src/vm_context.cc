@@ -147,11 +147,37 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
   TRACE("VmContext::ExecuteCall\n");
   LHCS(this);
   JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
+  ErlNifEnv *env = jsCallObject->env;
+  ERL_NIF_TERM erlArgs, head, tail;
+  ERL_NIF_TERM term;
+  unsigned length;
+  erlArgs = jsCallObject->args;
   Handle<String> field = String::New(jsCallObject->field);
   Handle<Function> fun = Local<Function>::Cast(jsCallObject->value->ToObject()->Get(field));
-  Local<Value> result = fun->Call(jsCallObject->value->ToObject(), 0, 0);
-  PostResult(jsCall->pid, result);
 
+  if(enif_get_list_length(env, erlArgs, &length)) {
+    Handle<Value> *args = (Handle<Value> *)malloc(sizeof(Handle<Value>) * length);
+
+    int i = 0;
+    tail = erlArgs;
+    while(enif_get_list_cell(env, erlArgs, &head, &tail)) {
+      args[i] = ErlWrapper::MakeHandle(this,
+          jsCallObject->env, head);
+      erlArgs = tail;
+      i++;
+    }
+
+    Local<Value> result = fun->Call(jsCallObject->value->ToObject(), length, args);
+    free(args);
+    term = JsWrapper::MakeTerm(this, env, result);
+  } else {
+    term = enif_make_atom(env, "bad_args");
+  }
+
+  PostResult(jsCall->pid, term);
+
+  enif_clear_env(jsCallObject->env);
+  enif_free_env(jsCallObject->env);
   free(jsCallObject->field);
   free(jsCallObject);
   free(jsCall);
@@ -326,6 +352,8 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
       JsCallObject *jsCallObject = (JsCallObject *)malloc(sizeof(JsCallObject));
       jsCallObject->value = erlJsWrapper->jsWrapper->value;
       jsCallObject->field = buffer;
+      jsCallObject->env = enif_alloc_env();
+      jsCallObject->args = enif_make_copy(jsCallObject->env, args);
 
       jsCall = (JsCall *)malloc(sizeof(JsCall));
       jsCall->pid = pid;

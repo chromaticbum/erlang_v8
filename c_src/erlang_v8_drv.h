@@ -54,6 +54,8 @@ typedef struct {
 typedef struct {
   Persistent<Value> value;
   char *field;
+  ErlNifEnv *env;
+  ERL_NIF_TERM args;
 } JsCallObject;
 
 typedef struct {
