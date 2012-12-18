@@ -11,13 +11,20 @@ static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
 }
 
 static Handle<Value> WrapFun(const Arguments &args) {
+  TRACE("WrapFun\n");
   Handle<External> external = Local<External>::Cast(args.Data());
+  TRACE("WrapFun - 1\n");
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+  TRACE("WrapFun - 2\n");
   ErlNifEnv *env = enif_alloc_env();
+  TRACE("WrapFun - 3\n");
   unsigned length = args.Length();
+  TRACE("WrapFun - 4\n");
   ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
+  TRACE("WrapFun - 5\n");
 
   for(int i = 0; i < length; i++) {
+  TRACE("WrapFun - 6\n");
     terms[i] = JsWrapper::MakeTerm(erlWrapper->vmContext, env, args[i]);
   }
 
@@ -26,7 +33,9 @@ static Handle<Value> WrapFun(const Arguments &args) {
       enif_make_copy(env, erlWrapper->term),
       enif_make_list_from_array(env, terms, length)
       );
+  TRACE("WrapFun - 7\n");
   enif_send(NULL, &(erlWrapper->vmContext->server), env, term);
+  TRACE("WrapFun - 8\n");
   free(terms);
   enif_clear_env(env);
   enif_free_env(env);
@@ -89,6 +98,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
   } else if(enif_get_double(env, term, &_double)) {
     value = Number::New(_double);
   } else if(enif_get_int(env, term, &_int)) {
+    TRACE("ErlWrapper::MakeHandle - INT\n");
     value = Integer::New(_int);
   } else if(enif_get_int64(env, term, &_int64)) {
     value = Integer::New(_int64);
@@ -110,8 +120,9 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     value = String::New(buffer);
     free(buffer);
   } else if(enif_is_fun(env, term)) {
+    TRACE("ErlWrapper::MakeHandle - FUN\n");
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
-    Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
+    Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);

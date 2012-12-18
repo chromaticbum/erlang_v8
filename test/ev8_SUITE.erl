@@ -96,6 +96,8 @@ call(Config) ->
 
   Obj = ev8:run_script(C, <<"new String('hello,world')">>),
   Fun = ev8:get(C, Obj, <<"split">>),
+  ev8:set(C, Obj, <<"myFun">>, fun(A, B) -> A + B end),
+  Fun2 = ev8:get(C, Obj, <<"myFun">>),
   Arr = ev8:call(C, Obj, Fun, [<<",">>]),
 
   <<"hello">> = ev8:get(C, Arr, 0),
@@ -103,5 +105,7 @@ call(Config) ->
 
   {error, not_fun} = ev8:call(C, Fun, Obj, [<<",">>]),
   {error, args_not_list} = ev8:call(C, Obj, Fun, <<",">>),
+
+  1337 = ev8:call(C, Fun2, [1330, 7]),
 
   ok.

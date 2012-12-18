@@ -88,7 +88,7 @@ void VmContext::PostResult(ErlNifPid pid,
     ERL_NIF_TERM term) {
   TRACE("VmContext::PostResult(term)\n");
   ERL_NIF_TERM result = enif_make_tuple2(env,
-      enif_make_atom(env, "result"),
+      enif_make_atom(env, "ok"),
       term
       );
 
@@ -235,21 +235,27 @@ void VmContext::ExecuteCall(JsExec *jsExec) {
       while(enif_get_list_cell(env, erlArgs, &head, &erlArgs)) {
         args[i] = ErlWrapper::MakeHandle(this,
             env, head);
+        i++;
       }
 
       if(jsCall->type == NORMAL) {
+  TRACE("VmContext::ExecuteCall - 3\n");
         Handle<Object> recv;
         Handle<Value> recvValue = ErlWrapper::MakeHandle(this,
             env, jsCall->recv);
 
         if(recvValue->IsObject()) {
+  TRACE("VmContext::ExecuteCall - 4\n");
           recv = recvValue->ToObject();
         } else {
           recv = context->Global();
         }
 
+  TRACE("VmContext::ExecuteCall - 5\n");
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
+  TRACE("VmContext::ExecuteCall - 6\n");
         term = JsWrapper::MakeTerm(this, env, result);
+  TRACE("VmContext::ExecuteCall - 7\n");
       } else {
         // Must be CONSTRUCTOR
 
@@ -292,18 +298,18 @@ Handle<Value> VmContext::ExecuteCallRespond(JsExec *jsExec) {
     if(arity == 2 && enif_get_atom_length(env, terms[0], &length, ERL_NIF_LATIN1)) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1);
-      if(strncmp(buffer, (char *)"ok", length) == 0) {
+      if(strncmp(buffer, "ok", length) == 0) {
         value = ErlWrapper::MakeHandle(this, env, terms[1]);
-      } else if(strncmp(buffer, (char *)"error", length) == 0) {
-        value = Exception::Error(String::New("erlang function returned error"));
+      } else if(strncmp(buffer, "error", length) == 0) {
+        value = ThrowException(Exception::Error(String::New("erlang function returned error")));
       } else {
-        value = Exception::Error(String::New("erlang function returned error"));
+        value = ThrowException(Exception::Error(String::New("erlang function returned error")));
       }
     } else {
-      value = Exception::Error(String::New("erlang function returned error"));
+      value = ThrowException(Exception::Error(String::New("erlang function returned error")));
     }
   } else {
-    value = Exception::Error(String::New("erlang function returned error"));
+    value = ThrowException(Exception::Error(String::New("erlang function returned error")));
     // TODO handle error condition
   }
 
