@@ -117,7 +117,7 @@ void VmContext::ExecuteRunScript(JsCall *jsCall) {
 
   enif_clear_env(env);
   enif_free_env(env);
-  free(jsCall->data);
+  free(sourceBuffer);
   free(jsCall);
 }
 
@@ -141,11 +141,28 @@ void VmContext::Exit(JsCall *jsCall) {
 
 void VmContext::ExecuteSet(JsCall *jsCall) {
   LHCST(this);
-  JsSet*jsSet= (JsSet*)jsCall->data;
-  ERL_NIF_TERM term = jsSet->jsWrapper->Set(jsSet->env,
-      jsSet->field,
-      jsSet->term);
-  PostResult(jsCall->pid, jsSet->env, term);
+
+  JsSet *jsSet = (JsSet*)jsCall->data;
+  ErlNifEnv *env = jsSet->env;
+  char *field = jsSet->field;
+  ERL_NIF_TERM termValue = jsSet->term;
+  Handle<Value> value = jsSet->jsWrapper->value;
+  ERL_NIF_TERM term;
+
+  Handle<Object> obj = value->ToObject();
+  if(!obj.IsEmpty()) {
+    Local<Value> fieldHandle = String::New(field);
+    Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
+        env, termValue);
+    obj->Set(fieldHandle, fieldValue);
+
+    term = JsWrapper::MakeTerm(this,
+        env, fieldValue);
+  } else {
+    term = JsWrapper::MakeTerm(env, trycatch);
+  }
+
+  PostResult(jsCall->pid, env, term);
 
   enif_clear_env(jsSet->env);
   enif_free_env(jsSet->env);
@@ -159,7 +176,7 @@ void VmContext::ExecuteGet(JsCall *jsCall) {
   LHCST(this);
 
   ErlNifEnv *env = enif_alloc_env();
-  JsGet *jsGet= (JsGet*)jsCall->data;
+  JsGet *jsGet = (JsGet*)jsCall->data;
   Local<Value> value = jsGet->jsWrapper->Get(jsGet->field);
   ERL_NIF_TERM term = JsWrapper::MakeTerm(this,
       env, value);

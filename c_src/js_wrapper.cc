@@ -19,40 +19,8 @@ JsWrapper::~JsWrapper() {
   enif_release_resource(vmContext->erlVmContext);
 }
 
-ERL_NIF_TERM JsWrapper::Set(ErlNifEnv *env, char *field, ERL_NIF_TERM term) {
-  if(value->IsObject()) {
-    Handle<Object> object = value->ToObject();
-    Handle<String> fieldStr = String::New(field);
-    Local<Value> value = ErlWrapper::MakeHandle(vmContext, env, term);
-
-    object->Set(fieldStr, value);
-
-    return MakeTerm(vmContext, env, object->Get(fieldStr));
-  } else {
-    return enif_make_badarg(env);
-  }
-}
-
 Local<Value> JsWrapper::Get(char *field) {
   return value->ToObject()->Get(String::New(field));
-}
-
-ERL_NIF_TERM JsWrapper::MakeNativeTerm(VmContext *vmContext,
-    ErlNifEnv *env,
-    Local<Value> value) {
-  if(value->IsArray()) {
-    Handle<Array> arr = Handle<Array>::Cast(value);
-    unsigned length = arr->Length();
-    ERL_NIF_TERM terms[length];
-
-    for(int i = 0; i < length; i++) {
-      terms[i] = JsWrapper::MakeNativeTerm(vmContext, env, arr->Get(i));
-    }
-
-    return enif_make_list_from_array(env, terms, length);
-  } else {
-    return MakeTerm(vmContext, env, value);
-  }
 }
 
 ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
