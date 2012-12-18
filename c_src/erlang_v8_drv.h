@@ -128,8 +128,7 @@ class VmContext {
     ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
         ErlNifPid pid);
 
-    void PostResult(ErlNifPid pid, Local<Value> result);
-    void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
+    void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
 
     void ExecuteRunScript(JsCall *jsCall);

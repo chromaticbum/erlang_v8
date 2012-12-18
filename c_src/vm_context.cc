@@ -82,23 +82,10 @@ void VmContext::Stop() {
   enif_thread_join(tid, &result);
 }
 
-void VmContext::PostResult(ErlNifPid pid, Local<Value> result) {
-  TRACE("VmContext::PostResult\n");
-  ErlNifEnv *env = enif_alloc_env();
-  ERL_NIF_TERM term = enif_make_tuple2(env,
-      enif_make_atom(env, "result"),
-      JsWrapper::MakeTerm(this, env, result)
-      );
-
-  // TODO: error handling
-  enif_send(NULL, &pid, env, term);
-  enif_clear_env(env);
-  enif_free_env(env);
-}
-
-void VmContext::PostResult(ErlNifPid pid, ERL_NIF_TERM term) {
+void VmContext::PostResult(ErlNifPid pid,
+    ErlNifEnv *env,
+    ERL_NIF_TERM term) {
   TRACE("VmContext::PostResult(term)\n");
-  ErlNifEnv *env = enif_alloc_env();
   ERL_NIF_TERM result = enif_make_tuple2(env,
       enif_make_atom(env, "result"),
       enif_make_copy(env, term)
@@ -106,8 +93,6 @@ void VmContext::PostResult(ErlNifPid pid, ERL_NIF_TERM term) {
 
   // TODO: error handling
   enif_send(NULL, &pid, env, result);
-  enif_clear_env(env);
-  enif_free_env(env);
 }
 
 void VmContext::ExecuteRunScript(JsCall *jsCall) {
@@ -120,10 +105,12 @@ void VmContext::ExecuteRunScript(JsCall *jsCall) {
   Handle<Script> script = Script::Compile(source);
   Local<Value> result = script->Run();
 
+  ErlNifEnv *env = enif_alloc_env();
   if(!result.IsEmpty()) {
-    PostResult(jsCall->pid, result);
+    ERL_NIF_TERM term = JsWrapper::MakeTerm(this,
+        env, result);
+    PostResult(jsCall->pid, env, term);
   } else {
-    ErlNifEnv *env = enif_alloc_env();
     Handle<Value> exception = trycatch.Exception();
     Handle<Value> stackTrace = trycatch.StackTrace();
     String::AsciiValue exceptionStr(exception);
@@ -135,17 +122,17 @@ void VmContext::ExecuteRunScript(JsCall *jsCall) {
     memcpy(buffer, *exceptionStr, strlen(*exceptionStr));
     memcpy(stBuffer, *stackTraceStr, strlen(*stackTraceStr));
 
-    PostResult(jsCall->pid, enif_make_tuple2(env,
+    PostResult(jsCall->pid, env, enif_make_tuple2(env,
           enif_make_atom(env, "error"),
           enif_make_tuple3(env,
             enif_make_atom(env, "js_compile_error"),
             term,
             stTerm)
           ));
-
-    enif_clear_env(env);
-    enif_free_env(env);
   }
+
+  enif_clear_env(env);
+  enif_free_env(env);
 
   free(jsCall->data);
   free(jsCall);
@@ -175,7 +162,7 @@ void VmContext::ExecuteSet(JsCall *jsCall) {
   ERL_NIF_TERM term = jsSet->jsWrapper->Set(jsSet->env,
       jsSet->field,
       jsSet->term);
-  PostResult(jsCall->pid, term);
+  PostResult(jsCall->pid, jsSet->env, term);
 
   enif_clear_env(jsSet->env);
   enif_free_env(jsSet->env);
@@ -188,10 +175,15 @@ void VmContext::ExecuteGet(JsCall *jsCall) {
   TRACE("VmContext::ExecuteGet\n");
   LHCS(this);
 
+  ErlNifEnv *env = enif_alloc_env();
   JsGet *jsGet= (JsGet*)jsCall->data;
   Local<Value> value = jsGet->jsWrapper->Get(jsGet->field);
-  PostResult(jsCall->pid, value);
+  ERL_NIF_TERM term = JsWrapper::MakeTerm(this,
+      env, value);
+  PostResult(jsCall->pid, env, term);
 
+  enif_clear_env(env);
+  enif_free_env(env);
   free(jsGet->field);
   free(jsGet);
   free(jsCall);
@@ -261,7 +253,8 @@ void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
         enif_make_uint(env, hs.heap_size_limit())
         )
       );
-  PostResult(jsCall->pid, term);
+  PostResult(jsCall->pid, env, term);
+
   enif_clear_env(env);
   enif_free_env(env);
 
