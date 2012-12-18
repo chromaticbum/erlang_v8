@@ -110,13 +110,9 @@ class VmContext {
     void Stop();
     void RunLoop();
     Handle<Value> Poll();
+
     ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     ERL_NIF_TERM SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    ERL_NIF_TERM SendCall(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM obj,
-        ERL_NIF_TERM field,
-        ERL_NIF_TERM args);
     ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM term);
@@ -129,20 +125,16 @@ class VmContext {
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm);
-    ERL_NIF_TERM SendErlNative(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM term);
     ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
         ErlNifPid pid);
+
     void PostResult(ErlNifPid pid, Local<Value> result);
     void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
 
     void ExecuteRunScript(JsCall *jsCall);
-    void ExecuteCall(JsCall *jsCall);
     void ExecuteSet(JsCall *jsCall);
     void ExecuteGet(JsCall *jsCall);
-    void ExecuteErlNative(JsCall *jsCall);
     void ExecuteHeapStatistics(JsCall *jsCall);
     Handle<Value> ExecuteCallRespond(JsCall *jsCall);
     void Exit(JsCall *jsCall);

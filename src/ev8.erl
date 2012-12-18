@@ -6,13 +6,15 @@
   new_vm/0,
   new_context/1,
   set_context_server/2,
+  call_respond/3
+  ]).
+
+% VM Functions
+-export([
   run_script/2,
   set/4,
   get/3,
-  execute_field/4,
-  to_term/2,
-  heap_statistics/1,
-  call_respond/3
+  heap_statistics/1
   ]).
 
 start() ->
@@ -38,14 +40,8 @@ set(Context, JsObject, Field, Term) ->
 get(Context, JsObject, Field) ->
   execute(Context, self(), {get, JsObject, Field}).
 
-execute_field(Context, JsObject, Field, Args) ->
-  execute(Context, self(), {call, JsObject, Field, Args}).
-
 run_script(Context, Source) ->
   execute(Context, self(), {run_script, Source}).
-
-to_term(Context, JsObject) ->
-  execute(Context, self(), {erl_native, JsObject}).
 
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).

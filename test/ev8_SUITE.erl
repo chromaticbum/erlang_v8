@@ -10,16 +10,12 @@
 
 -export([
   run_script/1,
-  execute_field/1,
-  fields/1,
-  to_term/1
+  fields/1
   ]).
 
 all() ->
   [run_script,
-   execute_field,
-   fields,
-   to_term].
+   fields].
 
 init_per_suite(Config) ->
   ev8:start(),
@@ -43,18 +39,6 @@ run_script(Config) ->
   false = ev8:run_script(C, <<"false">>),
   <<"hello">> = ev8:run_script(C, <<"'hello'">>),
   <<>> = ev8:run_script(C, <<"new Object()">>),
-
-  ok.
-
-execute_field(Config) ->
-  C = ?config(context, Config),
-
-  Obj = ev8:run_script(C, <<"new Object()">>),
-  ev8:set(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
-  <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, []),
-  ev8:set(C, Obj, <<"erlFunArgs">>, fun(A, B) -> A + B end),
-  42 = ev8:execute_field(C, Obj, <<"erlFunArgs">>, [32, 10]),
-  % TODO: allow passing of arguments
 
   ok.
 
@@ -82,12 +66,4 @@ fields(Config) ->
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
 
-  ok.
-
-to_term(Config) ->
-  C = ?config(context, Config),
-
-  Obj = ev8:run_script(C, <<"new Object()">>),
-  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:set(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
-  
   ok.

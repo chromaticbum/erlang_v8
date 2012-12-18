@@ -169,47 +169,6 @@ void VmContext::Exit(JsCall *jsCall) {
   enif_thread_exit(NULL);
 }
 
-void VmContext::ExecuteCall(JsCall *jsCall) {
-  TRACE("VmContext::ExecuteCall\n");
-  LHCS(this);
-  JsCallObject *jsCallObject = (JsCallObject *)jsCall->data;
-  ErlNifEnv *env = jsCallObject->env;
-  ERL_NIF_TERM erlArgs, head, tail;
-  ERL_NIF_TERM term;
-  unsigned length;
-  erlArgs = jsCallObject->args;
-  Handle<String> field = String::New(jsCallObject->field);
-  // TODO error handling if not a function
-  Handle<Function> fun = Local<Function>::Cast(jsCallObject->value->ToObject()->Get(field));
-
-  if(enif_get_list_length(env, erlArgs, &length)) {
-    Handle<Value> *args = (Handle<Value> *)malloc(sizeof(Handle<Value>) * length);
-
-    int i = 0;
-    tail = erlArgs;
-    while(enif_get_list_cell(env, erlArgs, &head, &tail)) {
-      args[i] = ErlWrapper::MakeHandle(this,
-          jsCallObject->env, head);
-      erlArgs = tail;
-      i++;
-    }
-
-    Local<Value> result = fun->Call(jsCallObject->value->ToObject(), length, args);
-    free(args);
-    term = JsWrapper::MakeTerm(this, env, result);
-  } else {
-    term = enif_make_atom(env, "bad_args");
-  }
-
-  PostResult(jsCall->pid, term);
-
-  enif_clear_env(jsCallObject->env);
-  enif_free_env(jsCallObject->env);
-  free(jsCallObject->field);
-  free(jsCallObject);
-  free(jsCall);
-}
-
 void VmContext::ExecuteSet(JsCall *jsCall) {
   LHCS(this);
   JsSet*jsSet= (JsSet*)jsCall->data;
@@ -277,21 +236,6 @@ Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
   return value;
 }
 
-void VmContext::ExecuteErlNative(JsCall *jsCall) {
-  LHCS(this);
-  TRACE("VmContext::ExecuteErlNative\n");
-  JsWrapper *jsWrapper = (JsWrapper *)jsCall->data;
-  Local<Value> value = Local<Value>::New(jsWrapper->value);
-  ErlNifEnv *env = enif_alloc_env();
-  ERL_NIF_TERM term = JsWrapper::MakeNativeTerm(this, env, value);
-
-  PostResult(jsCall->pid, term);
-
-  enif_clear_env(env);
-  enif_free_env(env);
-  free(jsCall);
-}
-
 void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
   LHCS(this);
 
@@ -342,17 +286,11 @@ Handle<Value> VmContext::Poll() {
     case RUN_SCRIPT:
       ExecuteRunScript(jsCall2);
       break;
-    case CALL:
-      ExecuteCall(jsCall2);
-      break;
     case SET:
       ExecuteSet(jsCall2);
       break;
     case GET:
       ExecuteGet(jsCall2);
-      break;
-    case ERL_NATIVE:
-      ExecuteErlNative(jsCall2);
       break;
     case HEAP_STATISTICS:
       ExecuteHeapStatistics(jsCall2);
@@ -383,40 +321,6 @@ ERL_NIF_TERM VmContext::SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TER
     jsCall->data = script;
 
     return enif_make_atom(env, "ok");
-  } else {
-    return enif_make_badarg(env);
-  }
-}
-
-ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
-    ErlNifPid pid,
-    ERL_NIF_TERM obj,
-    ERL_NIF_TERM field,
-    ERL_NIF_TERM args) {
-  ErlJsWrapper *erlJsWrapper;
-
-  if(enif_get_resource(env, obj, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    ErlNifBinary binary;
-    if(enif_inspect_iolist_as_binary(env, field, &binary)) {
-      char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
-      memcpy(buffer, binary.data, binary.size);
-      buffer[binary.size] = NULL;
-
-      JsCallObject *jsCallObject = (JsCallObject *)malloc(sizeof(JsCallObject));
-      jsCallObject->value = erlJsWrapper->jsWrapper->value;
-      jsCallObject->field = buffer;
-      jsCallObject->env = enif_alloc_env();
-      jsCallObject->args = enif_make_copy(jsCallObject->env, args);
-
-      jsCall = (JsCall *)malloc(sizeof(JsCall));
-      jsCall->pid = pid;
-      jsCall->type = CALL;
-      jsCall->data = jsCallObject;
-
-      return enif_make_atom(env, "ok");
-    } else {
-      return enif_make_badarg(env);
-    }
   } else {
     return enif_make_badarg(env);
   }
@@ -512,24 +416,6 @@ ERL_NIF_TERM VmContext::SendHeapStatistics(ErlNifEnv *env,
   return enif_make_atom(env, "ok");
 }
 
-ERL_NIF_TERM VmContext::SendErlNative(ErlNifEnv *env,
-    ErlNifPid pid,
-    ERL_NIF_TERM term) {
-  TRACE("VmContext::SendErlNative\n");
-  ErlJsWrapper *erlJsWrapper;
-
-  if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    jsCall = (JsCall *)malloc(sizeof(JsCall));
-    jsCall->pid = pid;
-    jsCall->type = ERL_NATIVE;
-    jsCall->data = erlJsWrapper->jsWrapper;
-
-    return enif_make_atom(env, "ok");
-  } else {
-    return enif_make_badarg(env);
-  }
-}
-
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   TRACE("VmContext::Send\n");
   const ERL_NIF_TERM *command;
@@ -543,8 +429,6 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, (char *)"run_script", length) == 0) {
           result = SendRunScript(env, pid, command[1]);
-        } else if(strncmp(buffer, (char *)"call", length) == 0) {
-          result = SendCall(env, pid, command[1], command[2], command[3]);
         } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {
           result = SendCallRespond(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"set", length) == 0) {
@@ -553,8 +437,6 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendGet(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {
           result = SendHeapStatistics(env, pid);
-        } else if(strncmp(buffer, (char *)"erl_native", length) == 0) {
-          result = SendErlNative(env, pid, command[1]);
         } else {
           result = enif_make_badarg(env);
         }
