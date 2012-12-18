@@ -66,6 +66,7 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
   ErlNifUInt64 _uint64;
   double _double;
   ErlNifBinary binary;
+  ErlJsWrapper *erlJsWrapper;
 
   Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
@@ -109,6 +110,8 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
+  } else if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
+    value = Local<Value>::New(erlJsWrapper->jsWrapper->value);
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     value = Local<External>::New(erlWrapper->MakeExternal());

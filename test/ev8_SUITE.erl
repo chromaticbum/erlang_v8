@@ -68,6 +68,10 @@ fields(Config) ->
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
 
+  FieldObj = ev8:run_script(C, <<"new Object">>),
+  ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),
+  <<"godzilla strikes">> = ev8:get(C, Obj, FieldObj),
+
   ok.
 
 wrapped_fun(Config) ->

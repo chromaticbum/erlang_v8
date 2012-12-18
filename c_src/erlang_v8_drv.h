@@ -38,11 +38,9 @@ typedef struct {
 typedef enum {
   EXIT,
   RUN_SCRIPT,
-  CALL,
   CALL_RESPOND,
   SET,
   GET,
-  ERL_NATIVE,
   HEAP_STATISTICS
 } JsCallType;
 
@@ -61,14 +59,15 @@ typedef struct {
 
 typedef struct {
   JsWrapper *jsWrapper;
-  char *field;
   ErlNifEnv *env;
+  ERL_NIF_TERM fieldTerm;
   ERL_NIF_TERM term;
 } JsSet;
 
 typedef struct {
   JsWrapper *jsWrapper;
-  char *field;
+  ErlNifEnv *env;
+  ERL_NIF_TERM term;
 } JsGet;
 
 typedef struct {

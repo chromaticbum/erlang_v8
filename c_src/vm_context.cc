@@ -144,14 +144,15 @@ void VmContext::ExecuteSet(JsCall *jsCall) {
 
   JsSet *jsSet = (JsSet*)jsCall->data;
   ErlNifEnv *env = jsSet->env;
-  char *field = jsSet->field;
   ERL_NIF_TERM termValue = jsSet->term;
+  ERL_NIF_TERM fieldTerm = jsSet->fieldTerm;
   Handle<Value> value = jsSet->jsWrapper->value;
   ERL_NIF_TERM term;
 
   Handle<Object> obj = value->ToObject();
   if(!obj.IsEmpty()) {
-    Local<Value> fieldHandle = String::New(field);
+    Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
+        env, fieldTerm);
     Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
         env, termValue);
     obj->Set(fieldHandle, fieldValue);
@@ -166,7 +167,6 @@ void VmContext::ExecuteSet(JsCall *jsCall) {
 
   enif_clear_env(jsSet->env);
   enif_free_env(jsSet->env);
-  free(jsSet->field);
   free(jsSet);
   free(jsCall);
 }
@@ -175,14 +175,15 @@ void VmContext::ExecuteGet(JsCall *jsCall) {
   TRACE("VmContext::ExecuteGet\n");
   LHCST(this);
 
-  ErlNifEnv *env = enif_alloc_env();
   JsGet *jsGet = (JsGet*)jsCall->data;
+  ErlNifEnv *env = jsGet->env;
   JsWrapper *jsWrapper = jsGet->jsWrapper;
   Handle<Object> obj = jsWrapper->value->ToObject();
   ERL_NIF_TERM term;
 
   if(!obj.IsEmpty()) {
-    Local<Value> fieldHandle = String::New(jsGet->field);
+    Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
+        env, jsGet->term);
     Local<Value> fieldValue = obj->Get(fieldHandle);
 
     term = JsWrapper::MakeTerm(this,
@@ -195,7 +196,6 @@ void VmContext::ExecuteGet(JsCall *jsCall) {
 
   enif_clear_env(env);
   enif_free_env(env);
-  free(jsGet->field);
   free(jsGet);
   free(jsCall);
 }
@@ -361,8 +361,8 @@ ERL_NIF_TERM VmContext::SendSet(ErlNifEnv *env,
 
       JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
       jsSet->jsWrapper = erlJsWrapper->jsWrapper;
-      jsSet->field = field;
       jsSet->env = enif_alloc_env();
+      jsSet->fieldTerm = enif_make_copy(jsSet->env, fieldTerm);
       jsSet->term = enif_make_copy(jsSet->env, term);
 
       jsCall = (JsCall *)malloc(sizeof(JsCall));
@@ -386,26 +386,17 @@ ERL_NIF_TERM VmContext::SendGet(ErlNifEnv *env,
   ErlJsWrapper *erlJsWrapper;
 
   if(enif_get_resource(env, wrapperTerm, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    ErlNifBinary binary;
+    JsGet *jsGet = (JsGet*)malloc(sizeof(JsGet));
+    jsGet->jsWrapper = erlJsWrapper->jsWrapper;
+    jsGet->env = enif_alloc_env();
+    jsGet->term = enif_make_copy(jsGet->env, fieldTerm);
 
-    if(enif_inspect_binary(env, fieldTerm, &binary)) {
-      char *field = (char *)malloc((binary.size + 1) * sizeof(char));
-      memcpy(field, binary.data, binary.size);
-      field[binary.size] = NULL;
+    jsCall = (JsCall *)malloc(sizeof(JsCall));
+    jsCall->pid = pid;
+    jsCall->type = GET;
+    jsCall->data = jsGet;
 
-      JsGet *jsGet = (JsGet*)malloc(sizeof(JsGet));
-      jsGet->jsWrapper = erlJsWrapper->jsWrapper;
-      jsGet->field = field;
-
-      jsCall = (JsCall *)malloc(sizeof(JsCall));
-      jsCall->pid = pid;
-      jsCall->type = GET;
-      jsCall->data = jsGet;
-
-      return enif_make_atom(env, "ok");
-    } else {
-      return enif_make_badarg(env);
-    }
+    return enif_make_atom(env, "ok");
   } else {
     return enif_make_badarg(env);
   }
