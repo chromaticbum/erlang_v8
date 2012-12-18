@@ -65,7 +65,6 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
 
       return enif_make_copy(env, erlWrapper->term);
     } else if(value->IsNativeError()) {
-      TRACE("NATIVE ERROR\n");
       Local<String> detail = value->ToDetailString();
       String::AsciiValue ascii(detail);
       ERL_NIF_TERM binary;
@@ -75,7 +74,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
       return enif_make_tuple2(env,
           enif_make_atom(env, "error"),
           enif_make_tuple2(env,
-            enif_make_atom(env, "js_error"),
+            enif_make_atom(env, "js_runtime_error"),
             binary)
           );
     } else {

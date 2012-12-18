@@ -113,13 +113,39 @@ void VmContext::PostResult(ErlNifPid pid, ERL_NIF_TERM term) {
 void VmContext::ExecuteScript(JsCall *jsCall) {
   TRACE("VmContext::ExecuteScript\n");
   LHCS(this);
+  TryCatch trycatch;
+
   char *sourceBuffer = (char *)jsCall->data;
   Handle<String> source = String::New(sourceBuffer);
   Handle<Script> script = Script::Compile(source);
   Local<Value> result = script->Run();
-  TRACE("VmContext::ExecuteScript - 1\n");
-  PostResult(jsCall->pid, result);
-  TRACE("VmContext::ExecuteScript - 2\n");
+
+  if(!result.IsEmpty()) {
+    PostResult(jsCall->pid, result);
+  } else {
+    ErlNifEnv *env = enif_alloc_env();
+    Handle<Value> exception = trycatch.Exception();
+    Handle<Value> stackTrace = trycatch.StackTrace();
+    String::AsciiValue exceptionStr(exception);
+    String::AsciiValue stackTraceStr(stackTrace);
+    ERL_NIF_TERM term;
+    ERL_NIF_TERM stTerm;
+    char *buffer = (char *)enif_make_new_binary(env, strlen(*exceptionStr), &term);
+    char *stBuffer = (char *)enif_make_new_binary(env, strlen(*stackTraceStr), &stTerm);
+    memcpy(buffer, *exceptionStr, strlen(*exceptionStr));
+    memcpy(stBuffer, *stackTraceStr, strlen(*stackTraceStr));
+
+    PostResult(jsCall->pid, enif_make_tuple2(env,
+          enif_make_atom(env, "error"),
+          enif_make_tuple3(env,
+            enif_make_atom(env, "js_compile_error"),
+            term,
+            stTerm)
+          ));
+
+    enif_clear_env(env);
+    enif_free_env(env);
+  }
 
   free(jsCall->data);
   free(jsCall);
