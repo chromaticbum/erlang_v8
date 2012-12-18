@@ -19,10 +19,6 @@ JsWrapper::~JsWrapper() {
   enif_release_resource(vmContext->erlVmContext);
 }
 
-Local<Value> JsWrapper::Get(char *field) {
-  return value->ToObject()->Get(String::New(field));
-}
-
 ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
     Handle<Value> value) {
   String::AsciiValue ascii(value);

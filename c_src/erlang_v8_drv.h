@@ -150,8 +150,6 @@ class JsWrapper {
     JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _value);
     ~JsWrapper();
 
-    Local<Value> Get(char *field);
-
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);
     static ERL_NIF_TERM MakeTerm(VmContext *vmContext,

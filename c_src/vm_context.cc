@@ -177,9 +177,20 @@ void VmContext::ExecuteGet(JsCall *jsCall) {
 
   ErlNifEnv *env = enif_alloc_env();
   JsGet *jsGet = (JsGet*)jsCall->data;
-  Local<Value> value = jsGet->jsWrapper->Get(jsGet->field);
-  ERL_NIF_TERM term = JsWrapper::MakeTerm(this,
-      env, value);
+  JsWrapper *jsWrapper = jsGet->jsWrapper;
+  Handle<Object> obj = jsWrapper->value->ToObject();
+  ERL_NIF_TERM term;
+
+  if(!obj.IsEmpty()) {
+    Local<Value> fieldHandle = String::New(jsGet->field);
+    Local<Value> fieldValue = obj->Get(fieldHandle);
+
+    term = JsWrapper::MakeTerm(this,
+        env, fieldValue);
+  } else {
+    term = JsWrapper::MakeTerm(env, trycatch);
+  }
+
   PostResult(jsCall->pid, env, term);
 
   enif_clear_env(env);
