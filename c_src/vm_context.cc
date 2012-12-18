@@ -97,43 +97,26 @@ void VmContext::PostResult(ErlNifPid pid,
 
 void VmContext::ExecuteRunScript(JsCall *jsCall) {
   TRACE("VmContext::ExecuteRunScript\n");
-  LHCS(this);
-  TryCatch trycatch;
+  LHCST(this);
 
   char *sourceBuffer = (char *)jsCall->data;
   Handle<String> source = String::New(sourceBuffer);
   Handle<Script> script = Script::Compile(source);
   Local<Value> result = script->Run();
+  ERL_NIF_TERM term;
 
   ErlNifEnv *env = enif_alloc_env();
   if(!result.IsEmpty()) {
-    ERL_NIF_TERM term = JsWrapper::MakeTerm(this,
+    term = JsWrapper::MakeTerm(this,
         env, result);
-    PostResult(jsCall->pid, env, term);
   } else {
-    Handle<Value> exception = trycatch.Exception();
-    Handle<Value> stackTrace = trycatch.StackTrace();
-    String::AsciiValue exceptionStr(exception);
-    String::AsciiValue stackTraceStr(stackTrace);
-    ERL_NIF_TERM term;
-    ERL_NIF_TERM stTerm;
-    char *buffer = (char *)enif_make_new_binary(env, strlen(*exceptionStr), &term);
-    char *stBuffer = (char *)enif_make_new_binary(env, strlen(*stackTraceStr), &stTerm);
-    memcpy(buffer, *exceptionStr, strlen(*exceptionStr));
-    memcpy(stBuffer, *stackTraceStr, strlen(*stackTraceStr));
-
-    PostResult(jsCall->pid, env, enif_make_tuple2(env,
-          enif_make_atom(env, "error"),
-          enif_make_tuple3(env,
-            enif_make_atom(env, "js_compile_error"),
-            term,
-            stTerm)
-          ));
+    term = JsWrapper::MakeTerm(env, trycatch);
   }
+
+  PostResult(jsCall->pid, env, term);
 
   enif_clear_env(env);
   enif_free_env(env);
-
   free(jsCall->data);
   free(jsCall);
 }
@@ -157,7 +140,7 @@ void VmContext::Exit(JsCall *jsCall) {
 }
 
 void VmContext::ExecuteSet(JsCall *jsCall) {
-  LHCS(this);
+  LHCST(this);
   JsSet*jsSet= (JsSet*)jsCall->data;
   ERL_NIF_TERM term = jsSet->jsWrapper->Set(jsSet->env,
       jsSet->field,
@@ -173,7 +156,7 @@ void VmContext::ExecuteSet(JsCall *jsCall) {
 
 void VmContext::ExecuteGet(JsCall *jsCall) {
   TRACE("VmContext::ExecuteGet\n");
-  LHCS(this);
+  LHCST(this);
 
   ErlNifEnv *env = enif_alloc_env();
   JsGet *jsGet= (JsGet*)jsCall->data;
@@ -229,7 +212,7 @@ Handle<Value> VmContext::ExecuteCallRespond(JsCall *jsCall) {
 }
 
 void VmContext::ExecuteHeapStatistics(JsCall *jsCall) {
-  LHCS(this);
+  LHCST(this);
 
   HeapStatistics hs;
   V8::GetHeapStatistics(&hs);

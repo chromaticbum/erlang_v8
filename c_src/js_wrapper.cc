@@ -14,7 +14,7 @@ JsWrapper::JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _v
 }
 
 JsWrapper::~JsWrapper() {
-  LHCS(vmContext);
+  LHCST(vmContext);
   value.Dispose();
   enif_release_resource(vmContext->erlVmContext);
 }
@@ -55,6 +55,30 @@ ERL_NIF_TERM JsWrapper::MakeNativeTerm(VmContext *vmContext,
   }
 }
 
+ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
+    Handle<Value> value) {
+  String::AsciiValue ascii(value);
+  unsigned length = ascii.length();
+  ERL_NIF_TERM binary;
+  char *buffer = (char *)enif_make_new_binary(env, length, &binary);
+  memcpy(buffer, *ascii, length);
+
+  return binary;
+}
+
+ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env,
+    TryCatch trycatch) {
+  Handle<Value> exception = trycatch.Exception();
+  Handle<Value> stackTrace = trycatch.StackTrace();
+
+  ERL_NIF_TERM exceptionTerm = MakeBinary(env, exception);
+  ERL_NIF_TERM stackTraceTerm = MakeBinary(env, stackTrace);
+
+  return enif_make_tuple3(env,
+      enif_make_atom(env, "js_runtime_error"),
+      exceptionTerm, stackTraceTerm);
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
     ErlNifEnv *env,
     Local<Value> value) {
@@ -64,19 +88,6 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
       ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
 
       return enif_make_copy(env, erlWrapper->term);
-    } else if(value->IsNativeError()) {
-      Local<String> detail = value->ToDetailString();
-      String::AsciiValue ascii(detail);
-      ERL_NIF_TERM binary;
-      char *buffer = (char *)enif_make_new_binary(env, strlen(*ascii), &binary);
-      memcpy(buffer, *ascii, strlen(*ascii));
-
-      return enif_make_tuple2(env,
-          enif_make_atom(env, "error"),
-          enif_make_tuple2(env,
-            enif_make_atom(env, "js_runtime_error"),
-            binary)
-          );
     } else {
       JsWrapper *jsWrapper = new JsWrapper(vmContext,
           env,

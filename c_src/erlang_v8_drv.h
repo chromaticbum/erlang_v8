@@ -6,11 +6,12 @@
 using namespace v8;
 using namespace std;
 
-#define LHCS(obj) \
+#define LHCST(obj) \
   Locker locker(obj->vm->isolate); \
   Isolate::Scope iscop(obj->vm->isolate); \
   HandleScope handle_scope; \
-  Context::Scope context_scope(obj->context);
+  Context::Scope context_scope(obj->context); \
+  TryCatch trycatch;
 
 #define TRACE printf
 
@@ -151,9 +152,14 @@ class JsWrapper {
 
     ERL_NIF_TERM Set(ErlNifEnv *env, char *field, ERL_NIF_TERM term);
     Local<Value> Get(char *field);
+
+    static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
+        Handle<Value> value);
     static ERL_NIF_TERM MakeTerm(VmContext *vmContext,
         ErlNifEnv *env,
         Local<Value> value);
+    static ERL_NIF_TERM MakeTerm(ErlNifEnv *env,
+        TryCatch trycatch);
     static ERL_NIF_TERM MakeNativeTerm(VmContext *vmContext,
         ErlNifEnv *env,
         Local<Value> value);
