@@ -148,6 +148,8 @@ class VmContext {
     void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
     JsExec *ResetJsExec();
 
+    ERL_NIF_TERM MakeError(ErlNifEnv *env, const char *reason);
+
     void ExecuteRunScript(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
     void ExecuteGet(JsExec *jsExec);

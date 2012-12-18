@@ -11,13 +11,15 @@
 -export([
   run_script/1,
   fields/1,
-  wrapped_fun/1
+  wrapped_fun/1,
+  call/1
   ]).
 
 all() ->
   [run_script,
    fields,
-  wrapped_fun].
+   wrapped_fun,
+   call].
 
 init_per_suite(Config) ->
   ev8:start(),
@@ -81,5 +83,20 @@ wrapped_fun(Config) ->
   ev8:set(C, Obj, <<"erlFun">>, fun(A, B) -> A + B end),
 
   6 = ev8:run_script(C, <<"a.erlFun(2, 4)">>),
+
+  ok.
+
+call(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:run_script(C, <<"new String('hello,world')">>),
+  Fun = ev8:get(C, Obj, <<"split">>),
+  Arr = ev8:call(C, Obj, Fun, [<<",">>]),
+
+  <<"hello">> = ev8:get(C, Arr, 0),
+  <<"world">> = ev8:get(C, Arr, 1),
+
+  {error, not_fun} = ev8:call(C, Fun, Obj, [<<",">>]),
+  {error, args_not_list} = ev8:call(C, Obj, Fun, <<",">>),
 
   ok.

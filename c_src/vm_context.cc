@@ -89,7 +89,7 @@ void VmContext::PostResult(ErlNifPid pid,
   TRACE("VmContext::PostResult(term)\n");
   ERL_NIF_TERM result = enif_make_tuple2(env,
       enif_make_atom(env, "result"),
-      enif_make_copy(env, term)
+      term
       );
 
   // TODO: error handling
@@ -132,6 +132,12 @@ JsExec *VmContext::ResetJsExec() {
   }
 
   return jsExec2;
+}
+
+ERL_NIF_TERM VmContext::MakeError(ErlNifEnv *env, const char *reason) {
+  return enif_make_tuple2(env,
+      enif_make_atom(env, "error"),
+      enif_make_atom(env, reason));
 }
 
 void VmContext::Exit(JsExec *jsExec) {
@@ -211,25 +217,23 @@ void VmContext::ExecuteCall(JsExec *jsExec) {
   ERL_NIF_TERM erlArgs, head;
 
   erlArgs = jsCall->args;
-  Handle<Object> fun = ErlWrapper::MakeHandle(this,
-      env, jsCall->fun)->ToObject();
-  if(!fun.IsEmpty() && fun->IsCallable()) {
-    TRACE("VmContext::ExecuteCall - 1\n");
+  Handle<Value> fun = ErlWrapper::MakeHandle(this,
+      env, jsCall->fun);
+  if(fun->IsFunction()) {
+  TRACE("VmContext::ExecuteCall - 1\n");
     unsigned length;
 
     if(enif_get_list_length(env, erlArgs, &length)) {
-      TRACE("VmContext::ExecuteCall - 2\n");
+  TRACE("VmContext::ExecuteCall - 2\n");
       Handle<Value> *args = (Handle<Value> *)malloc(length * sizeof(Handle<Value>));
       int i = 0;
 
       while(enif_get_list_cell(env, erlArgs, &head, &erlArgs)) {
-        TRACE("VmContext::ExecuteCall - 3\n");
         args[i] = ErlWrapper::MakeHandle(this,
             env, head);
       }
 
       if(jsCall->type == NORMAL) {
-        TRACE("VmContext::ExecuteCall - 4\n");
         Handle<Object> recv;
         Handle<Value> recvValue = ErlWrapper::MakeHandle(this,
             env, jsCall->recv);
@@ -240,26 +244,21 @@ void VmContext::ExecuteCall(JsExec *jsExec) {
           recv = context->Global();
         }
 
-        if(!recv.IsEmpty()) {
-          TRACE("VmContext::ExecuteCall - 5\n");
-          Local<Value> result = fun->CallAsFunction(recv, length, args);
-          term = JsWrapper::MakeTerm(this, env, result);
-        } else {
-          term = enif_make_badarg(env);
-        }
+        Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
+        term = JsWrapper::MakeTerm(this, env, result);
       } else {
         // Must be CONSTRUCTOR
 
-        Local<Value> result = fun->CallAsConstructor(length, args);
+        Local<Value> result = fun->ToObject()->CallAsConstructor(length, args);
         term = JsWrapper::MakeTerm(this, env, result);
       }
 
       free(args);
     } else {
-      term = enif_make_badarg(env);
+      term = MakeError(env, "args_not_list");
     }
   } else {
-    term = enif_make_badarg(env);
+    term = MakeError(env, "not_fun");
   }
 
   PostResult(jsExec->pid, env, term);
@@ -484,30 +483,22 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
     ERL_NIF_TERM recv,
     ERL_NIF_TERM fun,
     ERL_NIF_TERM args) {
-  ERL_NIF_TERM term;
-
-  if(enif_is_list(env, args)) {
-    JsCall *jsCall = (JsCall *)malloc(sizeof(JsCall));
-    jsCall->type = type;
-    jsCall->env = enif_alloc_env();
-    if(jsCall->type == NORMAL) {
-      jsCall->recv = enif_make_copy(jsCall->env, recv);
-    }
-    jsCall->fun = enif_make_copy(jsCall->env, fun);
-    jsCall->args = enif_make_copy(jsCall->env, args);
-
-    jsExec = (JsExec *)malloc(sizeof(JsExec));
-    jsExec->pid = pid;
-    jsExec->type = CALL;
-    jsExec->data = jsCall;
-
-    TRACE("VmContext::SendCall(term) - 2\n");
-    term = enif_make_atom(env, "ok");
-  } else {
-    term = enif_make_badarg(env);
+  JsCall *jsCall = (JsCall *)malloc(sizeof(JsCall));
+  jsCall->type = type;
+  jsCall->env = enif_alloc_env();
+  if(jsCall->type == NORMAL) {
+    jsCall->recv = enif_make_copy(jsCall->env, recv);
   }
+  jsCall->fun = enif_make_copy(jsCall->env, fun);
+  jsCall->args = enif_make_copy(jsCall->env, args);
 
-  return term;
+  jsExec = (JsExec *)malloc(sizeof(JsExec));
+  jsExec->pid = pid;
+  jsExec->type = CALL;
+  jsExec->data = jsCall;
+
+  TRACE("VmContext::SendCall(term) - 2\n");
+  return enif_make_atom(env, "ok");
 }
 
 ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,

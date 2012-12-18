@@ -79,5 +79,6 @@ execute(Context, Pid, Command) ->
 
 receive_result() ->
   receive
-    {result, Result} -> Result
+    {result, Result} -> Result;
+    Error -> {error, Error}
   end.
