@@ -5,8 +5,7 @@
   stop/0,
   new_vm/0,
   new_context/1,
-  set_context_server/2,
-  call_respond/3
+  set_context_server/2
   ]).
 
 % VM Functions
@@ -14,7 +13,8 @@
   run_script/2,
   set/4,
   get/3,
-  heap_statistics/1
+  heap_statistics/1,
+  call_respond/3
   ]).
 
 start() ->

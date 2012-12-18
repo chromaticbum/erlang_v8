@@ -10,12 +10,14 @@
 
 -export([
   run_script/1,
-  fields/1
+  fields/1,
+  wrapped_fun/1
   ]).
 
 all() ->
   [run_script,
-   fields].
+   fields,
+  wrapped_fun].
 
 init_per_suite(Config) ->
   ev8:start(),
@@ -65,5 +67,15 @@ fields(Config) ->
   false = ev8:get(C, Obj, <<"erlFalse">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
+
+  ok.
+
+wrapped_fun(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:run_script(C, <<"var a = new Object(); a">>),
+  ev8:set(C, Obj, <<"erlFun">>, fun(A, B) -> A + B end),
+
+  6 = ev8:run_script(C, <<"a.erlFun(2, 4)">>),
 
   ok.
