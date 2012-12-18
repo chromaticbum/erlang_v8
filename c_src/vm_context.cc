@@ -110,8 +110,8 @@ void VmContext::PostResult(ErlNifPid pid, ERL_NIF_TERM term) {
   enif_free_env(env);
 }
 
-void VmContext::ExecuteScript(JsCall *jsCall) {
-  TRACE("VmContext::ExecuteScript\n");
+void VmContext::ExecuteRunScript(JsCall *jsCall) {
+  TRACE("VmContext::ExecuteRunScript\n");
   LHCS(this);
   TryCatch trycatch;
 
@@ -337,8 +337,8 @@ Handle<Value> VmContext::Poll() {
 
   TRACE("VmContext::Poll - 5\n");
   switch(jsCall2->type) {
-    case SCRIPT:
-      ExecuteScript(jsCall2);
+    case RUN_SCRIPT:
+      ExecuteRunScript(jsCall2);
       break;
     case CALL:
       ExecuteCall(jsCall2);
@@ -367,7 +367,7 @@ Handle<Value> VmContext::Poll() {
   return Poll();
 }
 
-ERL_NIF_TERM VmContext::SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
+ERL_NIF_TERM VmContext::SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
   ErlNifBinary binary;
 
   if(enif_inspect_iolist_as_binary(env, term, &binary)) {
@@ -377,7 +377,7 @@ ERL_NIF_TERM VmContext::SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM t
 
     jsCall = (JsCall *)malloc(sizeof(JsCall));
     jsCall->pid = pid;
-    jsCall->type = SCRIPT;
+    jsCall->type = RUN_SCRIPT;
     jsCall->data = script;
 
     return enif_make_atom(env, "ok");
@@ -539,8 +539,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
     if(enif_get_atom_length(env, command[0], &length, ERL_NIF_LATIN1)) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
-        if(strncmp(buffer, (char *)"script", length) == 0) {
-          result = SendScript(env, pid, command[1]);
+        if(strncmp(buffer, (char *)"run_script", length) == 0) {
+          result = SendRunScript(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"call", length) == 0) {
           result = SendCall(env, pid, command[1], command[2], command[3]);
         } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {

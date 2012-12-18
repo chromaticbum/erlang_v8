@@ -6,7 +6,7 @@
   new_vm/0,
   new_context/1,
   set_context_server/2,
-  execute_script/2,
+  run_script/2,
   set_field/4,
   get_field/3,
   execute_field/4,
@@ -41,8 +41,8 @@ get_field(Context, JsObject, Field) ->
 execute_field(Context, JsObject, Field, Args) ->
   execute(Context, self(), {call, JsObject, Field, Args}).
 
-execute_script(Context, Source) ->
-  execute(Context, self(), {script, Source}).
+run_script(Context, Source) ->
+  execute(Context, self(), {run_script, Source}).
 
 to_term(Context, JsObject) ->
   execute(Context, self(), {erl_native, JsObject}).

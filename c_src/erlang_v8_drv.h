@@ -36,7 +36,7 @@ typedef struct {
 
 typedef enum {
   EXIT,
-  SCRIPT,
+  RUN_SCRIPT,
   CALL,
   CALL_RESPOND,
   SET_FIELD,
@@ -111,7 +111,7 @@ class VmContext {
     void RunLoop();
     Handle<Value> Poll();
     ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    ERL_NIF_TERM SendScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    ERL_NIF_TERM SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
     ERL_NIF_TERM SendCall(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM obj,
@@ -138,7 +138,7 @@ class VmContext {
     void PostResult(ErlNifPid pid, ERL_NIF_TERM term);
     JsCall *ResetJsCall();
 
-    void ExecuteScript(JsCall *jsCall);
+    void ExecuteRunScript(JsCall *jsCall);
     void ExecuteCall(JsCall *jsCall);
     void ExecuteSetField(JsCall *jsCall);
     void ExecuteGetField(JsCall *jsCall);

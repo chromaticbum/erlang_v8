@@ -9,14 +9,14 @@
   ]).
 
 -export([
-  execute_script/1,
+  run_script/1,
   execute_field/1,
   fields/1,
   to_term/1
   ]).
 
 all() ->
-  [execute_script,
+  [run_script,
    execute_field,
    fields,
    to_term].
@@ -31,25 +31,25 @@ end_per_suite(Config) ->
   ev8:stop(),
   Config.
 
-execute_script(Config) ->
+run_script(Config) ->
   C = ?config(context, Config),
 
-  undefined = ev8:execute_script(C, <<"undefined">>),
-  null = ev8:execute_script(C, <<"null">>),
-  22 = ev8:execute_script(C, <<"22">>),
-  -22 = ev8:execute_script(C, <<"-22">>),
-  22.2 = ev8:execute_script(C, <<"22.2">>),
-  true = ev8:execute_script(C, <<"true">>),
-  false = ev8:execute_script(C, <<"false">>),
-  <<"hello">> = ev8:execute_script(C, <<"'hello'">>),
-  <<>> = ev8:execute_script(C, <<"new Object()">>),
+  undefined = ev8:run_script(C, <<"undefined">>),
+  null = ev8:run_script(C, <<"null">>),
+  22 = ev8:run_script(C, <<"22">>),
+  -22 = ev8:run_script(C, <<"-22">>),
+  22.2 = ev8:run_script(C, <<"22.2">>),
+  true = ev8:run_script(C, <<"true">>),
+  false = ev8:run_script(C, <<"false">>),
+  <<"hello">> = ev8:run_script(C, <<"'hello'">>),
+  <<>> = ev8:run_script(C, <<"new Object()">>),
 
   ok.
 
 execute_field(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:execute_script(C, <<"new Object()">>),
+  Obj = ev8:run_script(C, <<"new Object()">>),
   ev8:set_field(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
   <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, []),
   ev8:set_field(C, Obj, <<"erlFunArgs">>, fun(A, B) -> A + B end),
@@ -61,7 +61,7 @@ execute_field(Config) ->
 fields(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:execute_script(C, <<"new Object()">>),
+  Obj = ev8:run_script(C, <<"new Object()">>),
   ev8:set_field(C, Obj, <<"erlUndefined">>, undefined),
   ev8:set_field(C, Obj, <<"erlNull">>, null),
   ev8:set_field(C, Obj, <<"erlInt">>, 22),
@@ -87,7 +87,7 @@ fields(Config) ->
 to_term(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:execute_script(C, <<"new Object()">>),
+  Obj = ev8:run_script(C, <<"new Object()">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:set_field(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
   
   ok.
