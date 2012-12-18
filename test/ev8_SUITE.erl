@@ -72,15 +72,15 @@ fields(Config) ->
   ev8:set(C, Obj, <<"erlBinary">>, <<"godzilla strikes">>),
   ev8:set(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
 
-  undefined = ev8:get_field(C, Obj, <<"erlUndefined">>),
-  null = ev8:get_field(C, Obj, <<"erlNull">>),
-  22 = ev8:get_field(C, Obj, <<"erlInt">>),
-  -22 = ev8:get_field(C, Obj, <<"erlNegInt">>),
-  22.2 = ev8:get_field(C, Obj, <<"erlDouble">>),
-  true = ev8:get_field(C, Obj, <<"erlTrue">>),
-  false = ev8:get_field(C, Obj, <<"erlFalse">>),
-  <<"godzilla strikes">> = ev8:get_field(C, Obj, <<"erlBinary">>),
-  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get_field(C, Obj, <<"erlList">>),
+  undefined = ev8:get(C, Obj, <<"erlUndefined">>),
+  null = ev8:get(C, Obj, <<"erlNull">>),
+  22 = ev8:get(C, Obj, <<"erlInt">>),
+  -22 = ev8:get(C, Obj, <<"erlNegInt">>),
+  22.2 = ev8:get(C, Obj, <<"erlDouble">>),
+  true = ev8:get(C, Obj, <<"erlTrue">>),
+  false = ev8:get(C, Obj, <<"erlFalse">>),
+  <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
+  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
 
   ok.
 

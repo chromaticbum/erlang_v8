@@ -225,16 +225,16 @@ void VmContext::ExecuteSet(JsCall *jsCall) {
   free(jsCall);
 }
 
-void VmContext::ExecuteGetField(JsCall *jsCall) {
-  TRACE("VmContext::ExecuteGetField\n");
+void VmContext::ExecuteGet(JsCall *jsCall) {
+  TRACE("VmContext::ExecuteGet\n");
   LHCS(this);
 
-  JsGetField *jsGetField = (JsGetField *)jsCall->data;
-  Local<Value> value = jsGetField->jsWrapper->Get(jsGetField->field);
+  JsGet *jsGet= (JsGet*)jsCall->data;
+  Local<Value> value = jsGet->jsWrapper->Get(jsGet->field);
   PostResult(jsCall->pid, value);
 
-  free(jsGetField->field);
-  free(jsGetField);
+  free(jsGet->field);
+  free(jsGet);
   free(jsCall);
 }
 
@@ -348,8 +348,8 @@ Handle<Value> VmContext::Poll() {
     case SET:
       ExecuteSet(jsCall2);
       break;
-    case GET_FIELD:
-      ExecuteGetField(jsCall2);
+    case GET:
+      ExecuteGet(jsCall2);
       break;
     case ERL_NATIVE:
       ExecuteErlNative(jsCall2);
@@ -471,7 +471,7 @@ ERL_NIF_TERM VmContext::SendSet(ErlNifEnv *env,
   }
 }
 
-ERL_NIF_TERM VmContext::SendGetField(ErlNifEnv *env,
+ERL_NIF_TERM VmContext::SendGet(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm) {
@@ -485,14 +485,14 @@ ERL_NIF_TERM VmContext::SendGetField(ErlNifEnv *env,
       memcpy(field, binary.data, binary.size);
       field[binary.size] = NULL;
 
-      JsGetField *jsGetField = (JsGetField *)malloc(sizeof(JsGetField));
-      jsGetField->jsWrapper = erlJsWrapper->jsWrapper;
-      jsGetField->field = field;
+      JsGet *jsGet = (JsGet*)malloc(sizeof(JsGet));
+      jsGet->jsWrapper = erlJsWrapper->jsWrapper;
+      jsGet->field = field;
 
       jsCall = (JsCall *)malloc(sizeof(JsCall));
       jsCall->pid = pid;
-      jsCall->type = GET_FIELD;
-      jsCall->data = jsGetField;
+      jsCall->type = GET;
+      jsCall->data = jsGet;
 
       return enif_make_atom(env, "ok");
     } else {
@@ -549,8 +549,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendCallRespond(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"set", length) == 0) {
           result = SendSet(env, pid, command[1], command[2], command[3]);
-        } else if(strncmp(buffer, (char *)"get_field", length) == 0) {
-          result = SendGetField(env, pid, command[1], command[2]);
+        } else if(strncmp(buffer, (char *)"get", length) == 0) {
+          result = SendGet(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {
           result = SendHeapStatistics(env, pid);
         } else if(strncmp(buffer, (char *)"erl_native", length) == 0) {

@@ -8,7 +8,7 @@
   set_context_server/2,
   run_script/2,
   set/4,
-  get_field/3,
+  get/3,
   execute_field/4,
   to_term/2,
   heap_statistics/1,
@@ -35,8 +35,8 @@ set_context_server(Context, Server) ->
 set(Context, JsObject, Field, Term) ->
   execute(Context, self(), {set, JsObject, Field, Term}).
 
-get_field(Context, JsObject, Field) ->
-  execute(Context, self(), {get_field, JsObject, Field}).
+get(Context, JsObject, Field) ->
+  execute(Context, self(), {get, JsObject, Field}).
 
 execute_field(Context, JsObject, Field, Args) ->
   execute(Context, self(), {call, JsObject, Field, Args}).
