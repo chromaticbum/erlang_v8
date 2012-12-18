@@ -111,7 +111,7 @@ void VmContext::ExecuteRunScript(JsExec *jsExec) {
     term = JsWrapper::MakeTerm(this,
         env, result);
   } else {
-    term = JsWrapper::MakeTerm(env, trycatch);
+    term = MakeError(env, JsWrapper::MakeTerm(env, COMPILER, trycatch));
   }
 
   PostResult(jsExec->pid, env, term);
@@ -135,9 +135,13 @@ JsExec *VmContext::ResetJsExec() {
 }
 
 ERL_NIF_TERM VmContext::MakeError(ErlNifEnv *env, const char *reason) {
+  return MakeError(env, enif_make_atom(env, reason));
+}
+
+ERL_NIF_TERM VmContext::MakeError(ErlNifEnv *env, ERL_NIF_TERM reason) {
   return enif_make_tuple2(env,
       enif_make_atom(env, "error"),
-      enif_make_atom(env, reason));
+      reason);
 }
 
 void VmContext::Exit(JsExec *jsExec) {
@@ -156,8 +160,8 @@ void VmContext::ExecuteSet(JsExec *jsExec) {
   Handle<Value> value = jsSet->jsWrapper->value;
   ERL_NIF_TERM term;
 
-  Handle<Object> obj = value->ToObject();
-  if(!obj.IsEmpty()) {
+  if(value->IsObject()) {
+    Handle<Object> obj = value->ToObject();
     Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
         env, fieldTerm);
     Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
@@ -167,7 +171,7 @@ void VmContext::ExecuteSet(JsExec *jsExec) {
     term = JsWrapper::MakeTerm(this,
         env, fieldValue);
   } else {
-    term = JsWrapper::MakeTerm(env, trycatch);
+    term = MakeError(env, "invalid_object");
   }
 
   PostResult(jsExec->pid, env, term);
@@ -185,10 +189,10 @@ void VmContext::ExecuteGet(JsExec *jsExec) {
   JsGet *jsGet = (JsGet*)jsExec->data;
   ErlNifEnv *env = jsGet->env;
   JsWrapper *jsWrapper = jsGet->jsWrapper;
-  Handle<Object> obj = jsWrapper->value->ToObject();
   ERL_NIF_TERM term;
 
-  if(!obj.IsEmpty()) {
+  if(jsWrapper->value->IsObject()) {
+    Handle<Object> obj = jsWrapper->value->ToObject();
     Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
         env, jsGet->term);
     Local<Value> fieldValue = obj->Get(fieldHandle);
@@ -196,7 +200,7 @@ void VmContext::ExecuteGet(JsExec *jsExec) {
     term = JsWrapper::MakeTerm(this,
         env, fieldValue);
   } else {
-    term = JsWrapper::MakeTerm(env, trycatch);
+    term = MakeError(env, "invalid_object");
   }
 
   PostResult(jsExec->pid, env, term);
@@ -510,25 +514,18 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
   const ERL_NIF_TERM *terms;
   ERL_NIF_TERM term;
 
-  TRACE("VmContext::SendCall\n");
   if(enif_get_tuple(env, call, &arity, &terms)) {
-    TRACE("VmContext::SendCall - 1\n");
     if(enif_get_atom_length(env, type, &length, ERL_NIF_LATIN1)) {
-      TRACE("VmContext::SendCall - 2\n");
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
 
       if(enif_get_atom(env, type, buffer, length + 1, ERL_NIF_LATIN1)) {
-        TRACE("VmContext::SendCall - 3\n");
         if(strncmp(buffer, "normal", length) == 0) {
-          TRACE("VmContext::SendCall - 4\n");
           if(arity == 3) {
-            TRACE("VmContext::SendCall - 5\n");
             term = SendCall(env, pid, NORMAL, terms[0], terms[1], terms[2]);
           } else {
             term = enif_make_badarg(env);
           }
         } else if(strncmp(buffer, "constructor", length) == 0) {
-          TRACE("VmContext::SendCall - 6\n");
           if(arity == 2) {
             term = SendCall(env, pid, CONSTRUCTOR, 0, terms[0], terms[1]);
           }

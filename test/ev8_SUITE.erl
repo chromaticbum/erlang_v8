@@ -44,6 +44,8 @@ run_script(Config) ->
   <<"hello">> = ev8:run_script(C, <<"'hello'">>),
   <<>> = ev8:run_script(C, <<"new Object()">>),
 
+  {error, {js_compiler_error, _Info, _StackTrace}} = ev8:run_script(C, <<"i.myFun()">>),
+
   ok.
 
 fields(Config) ->
@@ -69,6 +71,9 @@ fields(Config) ->
   false = ev8:get(C, Obj, <<"erlFalse">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
+
+  {'EXIT',{badarg,_}} = (catch ev8:get(C, 2, <<"heyThere">>)),
+  {'EXIT',{badarg,_}} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),
 
   FieldObj = ev8:run_script(C, <<"new Object">>),
   ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),

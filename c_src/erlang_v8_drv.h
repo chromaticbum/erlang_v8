@@ -50,6 +50,11 @@ typedef enum {
   CONSTRUCTOR
 } JsCallType;
 
+typedef enum {
+  RUNTIME,
+  COMPILER
+} JsErrorType;
+
 typedef struct {
   ErlNifPid pid;
   JsExecType type;
@@ -149,6 +154,7 @@ class VmContext {
     JsExec *ResetJsExec();
 
     ERL_NIF_TERM MakeError(ErlNifEnv *env, const char *reason);
+    ERL_NIF_TERM MakeError(ErlNifEnv *env, ERL_NIF_TERM reason);
 
     void ExecuteRunScript(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
@@ -175,6 +181,7 @@ class JsWrapper {
         ErlNifEnv *env,
         Local<Value> value);
     static ERL_NIF_TERM MakeTerm(ErlNifEnv *env,
+        JsErrorType type,
         TryCatch trycatch);
 };
 
