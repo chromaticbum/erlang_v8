@@ -100,6 +100,9 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     value = Integer::NewFromUnsigned(_uint64);
   } else if(enif_get_ulong(env, term, &_ulong)) {
     value = Integer::NewFromUnsigned(_ulong);
+  } else if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
+    TRACE("ErlWrapper::MakeHandle - RESOURCE\n");
+    value = Local<Value>::New(erlJsWrapper->jsWrapper->value);
   } else if(enif_inspect_binary(env, term, &binary)) {
     char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
     memcpy(buffer, binary.data, binary.size);
@@ -110,8 +113,6 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     Local<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
-  } else if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    value = Local<Value>::New(erlJsWrapper->jsWrapper->value);
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
     value = Local<External>::New(erlWrapper->MakeExternal());

@@ -38,24 +38,23 @@ typedef struct {
 typedef enum {
   EXIT,
   RUN_SCRIPT,
+  CALL,
   CALL_RESPOND,
   SET,
   GET,
   HEAP_STATISTICS
+} JsExecType;
+
+typedef enum {
+  NORMAL,
+  CONSTRUCTOR
 } JsCallType;
 
 typedef struct {
   ErlNifPid pid;
-  JsCallType type;
+  JsExecType type;
   void *data;
-} JsCall;
-
-typedef struct {
-  Persistent<Value> value;
-  char *field;
-  ErlNifEnv *env;
-  ERL_NIF_TERM args;
-} JsCallObject;
+} JsExec;
 
 typedef struct {
   JsWrapper *jsWrapper;
@@ -74,6 +73,14 @@ typedef struct {
   ErlNifEnv *env;
   ERL_NIF_TERM term;
 } JsCallRespond;
+
+typedef struct {
+  ErlNifEnv *env;
+  JsCallType type;
+  ERL_NIF_TERM recv;
+  ERL_NIF_TERM fun;
+  ERL_NIF_TERM args;
+} JsCall;
 
 class Vm {
   public:
@@ -99,7 +106,7 @@ class VmContext {
     ErlNifCond *cond, *cond2;
     ErlNifMutex *mutex, *mutex2;
     ERL_NIF_TERM term;
-    JsCall *jsCall;
+    JsExec *jsExec;
 
     VmContext(Vm *_vm, ErlNifEnv *env);
     ~VmContext();
@@ -125,18 +132,29 @@ class VmContext {
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm);
+    ERL_NIF_TERM SendCall(ErlNifEnv *env,
+        ErlNifPid pid,
+        JsCallType type,
+        ERL_NIF_TERM recv,
+        ERL_NIF_TERM fun,
+        ERL_NIF_TERM args);
+    ERL_NIF_TERM SendCall(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM type,
+        ERL_NIF_TERM call);
     ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
         ErlNifPid pid);
 
     void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
-    JsCall *ResetJsCall();
+    JsExec *ResetJsExec();
 
-    void ExecuteRunScript(JsCall *jsCall);
-    void ExecuteSet(JsCall *jsCall);
-    void ExecuteGet(JsCall *jsCall);
-    void ExecuteHeapStatistics(JsCall *jsCall);
-    Handle<Value> ExecuteCallRespond(JsCall *jsCall);
-    void Exit(JsCall *jsCall);
+    void ExecuteRunScript(JsExec *jsExec);
+    void ExecuteSet(JsExec *jsExec);
+    void ExecuteGet(JsExec *jsExec);
+    void ExecuteCall(JsExec *jsExec);
+    void ExecuteHeapStatistics(JsExec *jsExec);
+    Handle<Value> ExecuteCallRespond(JsExec *jsExec);
+    void Exit(JsExec *jsExec);
 };
 
 class JsWrapper {

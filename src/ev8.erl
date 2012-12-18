@@ -13,6 +13,9 @@
   run_script/2,
   set/4,
   get/3,
+  call/3,
+  call/4,
+  call_constructor/3,
   heap_statistics/1,
   call_respond/3
   ]).
@@ -39,6 +42,15 @@ set(Context, JsObject, Field, Term) ->
 
 get(Context, JsObject, Field) ->
   execute(Context, self(), {get, JsObject, Field}).
+
+call(Context, Fun, Args) ->
+  call(Context, undefined, Fun, Args).
+
+call(Context, Recv, Fun, Args) ->
+  execute(Context, self(), {call, normal, {Recv, Fun, Args}}).
+
+call_constructor(Context, Fun, Args) ->
+  execute(Context, self(), {call, constructor, {Fun, Args}}).
 
 run_script(Context, Source) ->
   execute(Context, self(), {run_script, Source}).
