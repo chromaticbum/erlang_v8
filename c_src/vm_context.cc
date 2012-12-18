@@ -210,16 +210,18 @@ void VmContext::ExecuteCall(JsCall *jsCall) {
   free(jsCall);
 }
 
-void VmContext::ExecuteSetField(JsCall *jsCall) {
+void VmContext::ExecuteSet(JsCall *jsCall) {
   LHCS(this);
-  JsSetField *jsSetField = (JsSetField *)jsCall->data;
-  ERL_NIF_TERM term = jsSetField->jsWrapper->Set(jsSetField->env, jsSetField->field, jsSetField->term);
+  JsSet*jsSet= (JsSet*)jsCall->data;
+  ERL_NIF_TERM term = jsSet->jsWrapper->Set(jsSet->env,
+      jsSet->field,
+      jsSet->term);
   PostResult(jsCall->pid, term);
 
-  enif_clear_env(jsSetField->env);
-  enif_free_env(jsSetField->env);
-  free(jsSetField->field);
-  free(jsSetField);
+  enif_clear_env(jsSet->env);
+  enif_free_env(jsSet->env);
+  free(jsSet->field);
+  free(jsSet);
   free(jsCall);
 }
 
@@ -343,8 +345,8 @@ Handle<Value> VmContext::Poll() {
     case CALL:
       ExecuteCall(jsCall2);
       break;
-    case SET_FIELD:
-      ExecuteSetField(jsCall2);
+    case SET:
+      ExecuteSet(jsCall2);
       break;
     case GET_FIELD:
       ExecuteGetField(jsCall2);
@@ -434,7 +436,7 @@ ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
   return enif_make_atom(env, "ok");
 }
 
-ERL_NIF_TERM VmContext::SendSetField(ErlNifEnv *env,
+ERL_NIF_TERM VmContext::SendSet(ErlNifEnv *env,
     ErlNifPid pid,
     ERL_NIF_TERM wrapperTerm,
     ERL_NIF_TERM fieldTerm,
@@ -449,16 +451,16 @@ ERL_NIF_TERM VmContext::SendSetField(ErlNifEnv *env,
       memcpy(field, binary.data, binary.size);
       field[binary.size] = NULL;
 
-      JsSetField *jsSetField = (JsSetField *)malloc(sizeof(JsSetField));
-      jsSetField->jsWrapper = erlJsWrapper->jsWrapper;
-      jsSetField->field = field;
-      jsSetField->env = enif_alloc_env();
-      jsSetField->term = enif_make_copy(jsSetField->env, term);
+      JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
+      jsSet->jsWrapper = erlJsWrapper->jsWrapper;
+      jsSet->field = field;
+      jsSet->env = enif_alloc_env();
+      jsSet->term = enif_make_copy(jsSet->env, term);
 
       jsCall = (JsCall *)malloc(sizeof(JsCall));
       jsCall->pid = pid;
-      jsCall->type = SET_FIELD;
-      jsCall->data = jsSetField;
+      jsCall->type = SET;
+      jsCall->data = jsSet;
 
       return enif_make_atom(env, "ok");
     } else {
@@ -545,8 +547,8 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
           result = SendCall(env, pid, command[1], command[2], command[3]);
         } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {
           result = SendCallRespond(env, pid, command[1]);
-        } else if(strncmp(buffer, (char *)"set_field", length) == 0) {
-          result = SendSetField(env, pid, command[1], command[2], command[3]);
+        } else if(strncmp(buffer, (char *)"set", length) == 0) {
+          result = SendSet(env, pid, command[1], command[2], command[3]);
         } else if(strncmp(buffer, (char *)"get_field", length) == 0) {
           result = SendGetField(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {

@@ -7,7 +7,7 @@
   new_context/1,
   set_context_server/2,
   run_script/2,
-  set_field/4,
+  set/4,
   get_field/3,
   execute_field/4,
   to_term/2,
@@ -32,8 +32,8 @@ new_context(Vm) ->
 set_context_server(Context, Server) ->
   v8nif:set_context_server(Context, Server).
 
-set_field(Context, JsObject, Field, Term) ->
-  execute(Context, self(), {set_field, JsObject, Field, Term}).
+set(Context, JsObject, Field, Term) ->
+  execute(Context, self(), {set, JsObject, Field, Term}).
 
 get_field(Context, JsObject, Field) ->
   execute(Context, self(), {get_field, JsObject, Field}).

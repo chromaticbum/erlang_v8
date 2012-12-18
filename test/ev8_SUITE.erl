@@ -50,9 +50,9 @@ execute_field(Config) ->
   C = ?config(context, Config),
 
   Obj = ev8:run_script(C, <<"new Object()">>),
-  ev8:set_field(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
+  ev8:set(C, Obj, <<"erlFun">>, fun()-> <<"hello godzilla">> end),
   <<"hello godzilla">> = ev8:execute_field(C, Obj, <<"erlFun">>, []),
-  ev8:set_field(C, Obj, <<"erlFunArgs">>, fun(A, B) -> A + B end),
+  ev8:set(C, Obj, <<"erlFunArgs">>, fun(A, B) -> A + B end),
   42 = ev8:execute_field(C, Obj, <<"erlFunArgs">>, [32, 10]),
   % TODO: allow passing of arguments
 
@@ -62,15 +62,15 @@ fields(Config) ->
   C = ?config(context, Config),
 
   Obj = ev8:run_script(C, <<"new Object()">>),
-  ev8:set_field(C, Obj, <<"erlUndefined">>, undefined),
-  ev8:set_field(C, Obj, <<"erlNull">>, null),
-  ev8:set_field(C, Obj, <<"erlInt">>, 22),
-  ev8:set_field(C, Obj, <<"erlNegInt">>, -22),
-  ev8:set_field(C, Obj, <<"erlDouble">>, 22.2),
-  ev8:set_field(C, Obj, <<"erlTrue">>, true),
-  ev8:set_field(C, Obj, <<"erlFalse">>, false),
-  ev8:set_field(C, Obj, <<"erlBinary">>, <<"godzilla strikes">>),
-  ev8:set_field(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
+  ev8:set(C, Obj, <<"erlUndefined">>, undefined),
+  ev8:set(C, Obj, <<"erlNull">>, null),
+  ev8:set(C, Obj, <<"erlInt">>, 22),
+  ev8:set(C, Obj, <<"erlNegInt">>, -22),
+  ev8:set(C, Obj, <<"erlDouble">>, 22.2),
+  ev8:set(C, Obj, <<"erlTrue">>, true),
+  ev8:set(C, Obj, <<"erlFalse">>, false),
+  ev8:set(C, Obj, <<"erlBinary">>, <<"godzilla strikes">>),
+  ev8:set(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
 
   undefined = ev8:get_field(C, Obj, <<"erlUndefined">>),
   null = ev8:get_field(C, Obj, <<"erlNull">>),
@@ -88,6 +88,6 @@ to_term(Config) ->
   C = ?config(context, Config),
 
   Obj = ev8:run_script(C, <<"new Object()">>),
-  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:set_field(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
+  [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:set(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
   
   ok.

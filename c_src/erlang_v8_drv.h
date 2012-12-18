@@ -39,7 +39,7 @@ typedef enum {
   RUN_SCRIPT,
   CALL,
   CALL_RESPOND,
-  SET_FIELD,
+  SET,
   GET_FIELD,
   ERL_NATIVE,
   HEAP_STATISTICS
@@ -63,7 +63,7 @@ typedef struct {
   char *field;
   ErlNifEnv *env;
   ERL_NIF_TERM term;
-} JsSetField;
+} JsSet;
 
 typedef struct {
   JsWrapper *jsWrapper;
@@ -120,7 +120,7 @@ class VmContext {
     ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM term);
-    ERL_NIF_TERM SendSetField(ErlNifEnv *env,
+    ERL_NIF_TERM SendSet(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
         ERL_NIF_TERM fieldTerm,
@@ -140,7 +140,7 @@ class VmContext {
 
     void ExecuteRunScript(JsCall *jsCall);
     void ExecuteCall(JsCall *jsCall);
-    void ExecuteSetField(JsCall *jsCall);
+    void ExecuteSet(JsCall *jsCall);
     void ExecuteGetField(JsCall *jsCall);
     void ExecuteErlNative(JsCall *jsCall);
     void ExecuteHeapStatistics(JsCall *jsCall);
