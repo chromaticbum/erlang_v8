@@ -167,4 +167,15 @@ multi_context_call(Config)->
   42 = ev8:call(C1, Fun2, []),
   42 = ev8:call(C2, Fun2, []),
 
+  C3 = ev8:new_context(Vm),
+  ev8:set(C3, global, <<"anotherFun">>, fun() -> ev8:call(C2, Fun2, []) end),
+  Fun3 = ev8:get(C3, global, <<"anotherFun">>),
+  ev8:set(C1, global, <<"multiFun">>, fun() ->
+        [ev8:run_script(C2, <<"'crazy context'">>),
+         ev8:call(C2, Fun2, []),
+         ev8:call(C3, Fun3, [])]
+    end),
+  Fun4 = ev8:get(C1, global, <<"multiFun">>),
+  [<<"crazy context">>, 42, 42] = ev8:call(C1, Fun4, []),
+
   ok.

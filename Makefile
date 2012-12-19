@@ -3,7 +3,7 @@ DIALYZER = dialyzer
 
 all: compile
 
-compile: clean rebar_compile
+compile: clean rebar-compile
 	
 rebar-compile:
 	./rebar compile
