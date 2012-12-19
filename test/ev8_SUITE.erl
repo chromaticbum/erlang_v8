@@ -135,8 +135,8 @@ call(Config) ->
   <<"hello">> = ev8:get(C, Arr, 0),
   <<"world">> = ev8:get(C, Arr, 1),
 
-  {error, not_fun} = ev8:call(C, Fun, Obj, [<<",">>]),
-  {error, args_not_list} = ev8:call(C, Obj, Fun, <<",">>),
+  {error, badfun} = ev8:call(C, Fun, Obj, [<<",">>]),
+  {error, badargs} = ev8:call(C, Obj, Fun, <<",">>),
 
   1337 = ev8:call(C, Fun2, [1330, 7]),
 

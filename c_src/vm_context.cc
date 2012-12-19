@@ -271,51 +271,41 @@ void VmContext::ExecuteGet(JsExec *jsExec) {
   free(jsExec);
 }
 
-void VmContext::ExecuteCall(JsExec *jsExec) {
-  TRACE("VmContext::ExecuteCall\n");
-  LHCST(this);
-
-  JsCall *jsCall = (JsCall *)jsExec->data;
-  ErlNifEnv *env = jsCall->env;
-  ERL_NIF_TERM term;
-  ERL_NIF_TERM erlArgs, head;
-
-  erlArgs = jsCall->args;
+ERL_NIF_TERM VmContext::ExecuteCall(JsCallType type,
+    ErlNifEnv *env,
+    ERL_NIF_TERM recvTerm,
+    ERL_NIF_TERM funTerm,
+    ERL_NIF_TERM argsTerm) {
   Handle<Value> fun = ErlWrapper::MakeHandle(this,
-      env, jsCall->fun);
+          env, funTerm);
+  ERL_NIF_TERM head;
+
   if(fun->IsFunction()) {
-  TRACE("VmContext::ExecuteCall - 1\n");
     unsigned length;
 
-    if(enif_get_list_length(env, erlArgs, &length)) {
-  TRACE("VmContext::ExecuteCall - 2\n");
+    if(enif_get_list_length(env, argsTerm, &length)) {
       Handle<Value> *args = (Handle<Value> *)malloc(length * sizeof(Handle<Value>));
       int i = 0;
 
-      while(enif_get_list_cell(env, erlArgs, &head, &erlArgs)) {
+      while(enif_get_list_cell(env, argsTerm, &head, &argsTerm)) {
         args[i] = ErlWrapper::MakeHandle(this,
             env, head);
         i++;
       }
 
-      if(jsCall->type == NORMAL) {
-  TRACE("VmContext::ExecuteCall - 3\n");
+      if(type == NORMAL) {
         Handle<Object> recv;
         Handle<Value> recvValue = ErlWrapper::MakeHandle(this,
-            env, jsCall->recv);
+            env, recvTerm);
 
         if(recvValue->IsObject()) {
-  TRACE("VmContext::ExecuteCall - 4\n");
           recv = recvValue->ToObject();
         } else {
           recv = context->Global();
         }
 
-  TRACE("VmContext::ExecuteCall - 5\n");
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
-  TRACE("VmContext::ExecuteCall - 6\n");
         term = JsWrapper::MakeTerm(this, env, result);
-  TRACE("VmContext::ExecuteCall - 7\n");
       } else {
         // Must be CONSTRUCTOR
 
@@ -325,17 +315,64 @@ void VmContext::ExecuteCall(JsExec *jsExec) {
 
       free(args);
     } else {
-      term = MakeError(env, "args_not_list");
+      term = MakeError(env, "badargs");
     }
   } else {
-    term = MakeError(env, "not_fun");
+    term = MakeError(env, "badfun");
+  }
+
+  return term;
+}
+
+void VmContext::ExecuteCall(JsExec *jsExec) {
+  LHCST(this);
+
+  unsigned length;
+  int arity;
+  const ERL_NIF_TERM *terms;
+  ERL_NIF_TERM term;
+  ErlNifEnv *env = jsExec->env;
+
+  if(jsExec->arity == 2) {
+    ERL_NIF_TERM typeTerm = jsExec->terms[0];
+    ERL_NIF_TERM callTerm = jsExec->terms[1];
+
+    if(enif_get_tuple(env, callTerm, &arity, &terms) &&
+        enif_get_atom_length(env, typeTerm, &length, ERL_NIF_LATIN1)) {
+      char *buffer = (char *)malloc((length + 1) * sizeof(char));
+      enif_get_atom(env, typeTerm, buffer, length + 1, ERL_NIF_LATIN1);
+
+      if(strncmp(buffer, "normal", length) == 0) {
+        if(arity == 3) {
+          term = ExecuteCall(NORMAL,
+              env, terms[0], terms[1], terms[2]);
+        } else {
+          term = MakeError(env, "badcallarity");
+        }
+      } else if(strncmp(buffer, "constructor", length) == 0) {
+        if(arity == 2) {
+          term = ExecuteCall(CONSTRUCTOR,
+              env, 0, terms[1], terms[2]);
+        } else {
+          term = MakeError(env, "badcallarity");
+        }
+      } else {
+        term = MakeError(env, "badcalltype");
+      }
+
+      free(buffer);
+    } else {
+      term = MakeError(env, "badcall");
+    }
+  } else {
+    term = MakeError(env, "badarity");
   }
 
   PostResult(jsExec->pid, env, term);
 
   enif_clear_env(env);
   enif_free_env(env);
-  free(jsCall);
+  free(jsExec->terms);
   free(jsExec);
 }
 
@@ -460,71 +497,6 @@ Handle<Value> VmContext::Poll() {
   return Poll();
 }
 
-ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
-    ErlNifPid pid,
-    JsCallType type,
-    ERL_NIF_TERM recv,
-    ERL_NIF_TERM fun,
-    ERL_NIF_TERM args) {
-  JsCall *jsCall = (JsCall *)malloc(sizeof(JsCall));
-  jsCall->type = type;
-  jsCall->env = enif_alloc_env();
-  if(jsCall->type == NORMAL) {
-    jsCall->recv = enif_make_copy(jsCall->env, recv);
-  }
-  jsCall->fun = enif_make_copy(jsCall->env, fun);
-  jsCall->args = enif_make_copy(jsCall->env, args);
-
-  jsExec = (JsExec *)malloc(sizeof(JsExec));
-  jsExec->pid = pid;
-  jsExec->type = CALL;
-  jsExec->data = jsCall;
-
-  return enif_make_atom(env, "ok");
-}
-
-ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
-    ErlNifPid pid,
-    ERL_NIF_TERM type,
-    ERL_NIF_TERM call) {
-  unsigned length;
-  int arity;
-  const ERL_NIF_TERM *terms;
-  ERL_NIF_TERM term;
-
-  if(enif_get_tuple(env, call, &arity, &terms)) {
-    if(enif_get_atom_length(env, type, &length, ERL_NIF_LATIN1)) {
-      char *buffer = (char *)malloc((length + 1) * sizeof(char));
-
-      if(enif_get_atom(env, type, buffer, length + 1, ERL_NIF_LATIN1)) {
-        if(strncmp(buffer, "normal", length) == 0) {
-          if(arity == 3) {
-            term = SendCall(env, pid, NORMAL, terms[0], terms[1], terms[2]);
-          } else {
-            term = enif_make_badarg(env);
-          }
-        } else if(strncmp(buffer, "constructor", length) == 0) {
-          if(arity == 2) {
-            term = SendCall(env, pid, CONSTRUCTOR, 0, terms[0], terms[1]);
-          }
-        } else {
-          term = enif_make_badarg(env);
-        }
-      } else {
-        term = enif_make_badarg(env);
-      }
-
-      free(buffer);
-    } else {
-      term = enif_make_badarg(env);
-    }
-  } else {
-    term = enif_make_badarg(env);
-  }
-
-  return term;
-}
-
 ERL_NIF_TERM VmContext::Send(ErlNifEnv *returnEnv,
     JsExecType type,
     ErlNifPid pid,
@@ -563,7 +535,7 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
         if(strncmp(buffer, "run_script", length) == 0) {
           result = Send(env, RUN_SCRIPT, pid, arity, command);
         } else if(strncmp(buffer, "call", length) == 0) {
-          result = SendCall(env, pid, command[1], command[2]);
+          result = Send(env, CALL, pid, arity, command);
         } else if(strncmp(buffer, "call_respond", length) == 0) {
           result = Send(env, CALL_RESPOND, pid, arity, command);
         } else if(strncmp(buffer, "set", length) == 0) {

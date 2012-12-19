@@ -134,16 +134,6 @@ class VmContext {
         ErlNifPid pid,
         int arity,
         const ERL_NIF_TERM *terms);
-    ERL_NIF_TERM SendCall(ErlNifEnv *env,
-        ErlNifPid pid,
-        JsCallType type,
-        ERL_NIF_TERM recv,
-        ERL_NIF_TERM fun,
-        ERL_NIF_TERM args);
-    ERL_NIF_TERM SendCall(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM type,
-        ERL_NIF_TERM call);
 
     void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
     JsExec *ResetJsExec();
@@ -154,6 +144,11 @@ class VmContext {
     void ExecuteRunScript(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
     void ExecuteGet(JsExec *jsExec);
+    ERL_NIF_TERM ExecuteCall(JsCallType type,
+        ErlNifEnv *env,
+        ERL_NIF_TERM recvTerm,
+        ERL_NIF_TERM funTerm,
+        ERL_NIF_TERM argsTerm);
     void ExecuteCall(JsExec *jsExec);
     void ExecuteHeapStatistics(JsExec *jsExec);
     Handle<Value> ExecuteCallRespond(JsExec *jsExec);
