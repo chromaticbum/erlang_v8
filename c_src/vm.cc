@@ -173,7 +173,7 @@ void Vm::ExecuteRunScript(JsExec *jsExec) {
 
         if(!script.IsEmpty() &&
             !(result = script->Run()).IsEmpty()) {
-          term = JsWrapper::MakeTerm(isolate,
+          term = JsWrapper::MakeTerm(this,
               env, result);
         } else {
           term = MakeError(env,
@@ -288,7 +288,7 @@ void Vm::ExecuteGet(JsExec *jsExec) {
           env, fieldTerm);
       Local<Value> fieldValue = obj->Get(fieldHandle);
 
-      term = JsWrapper::MakeTerm(isolate,
+      term = JsWrapper::MakeTerm(this,
           env, fieldValue);
     } else {
       term = MakeError(env, "invalid_object");
@@ -338,12 +338,12 @@ ERL_NIF_TERM Vm::ExecuteCall(VmContext *vmContext,
         }
 
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
-        term = JsWrapper::MakeTerm(isolate, env, result);
+        term = JsWrapper::MakeTerm(this, env, result);
       } else {
         // Must be CONSTRUCTOR
 
         Local<Value> result = fun->ToObject()->CallAsConstructor(length, args);
-        term = JsWrapper::MakeTerm(isolate, env, result);
+        term = JsWrapper::MakeTerm(this, env, result);
       }
 
       free(args);

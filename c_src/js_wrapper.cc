@@ -2,24 +2,26 @@
 
 using namespace std;
 
-JsWrapper::JsWrapper(Isolate *_isolate,
+JsWrapper::JsWrapper(Vm *_vm,
       ErlNifEnv *env, Persistent<Value> _value) {
-  isolate = _isolate;
+  vm = _vm;
   value = _value;
 
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
   resourceTerm = enif_make_resource(env, erlJsWrapper);
   enif_release_resource(erlJsWrapper);
+  enif_keep_resource(vm->erlVm);
 }
 
 JsWrapper::~JsWrapper() {
-  Locker locker(isolate);
-  Isolate::Scope iscope(isolate);
+  Locker locker(vm->isolate);
+  Isolate::Scope iscope(vm->isolate);
   HandleScope handle_scope;
   Context::Scope context_scope(Context::New());
 
   value.Dispose();
+  enif_release_resource(vm->erlVm);
 }
 
 ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
@@ -46,7 +48,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env,
       exceptionTerm, stackTraceTerm);
 }
 
-ERL_NIF_TERM JsWrapper::MakeTerm(Isolate *isolate,
+ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
@@ -56,7 +58,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Isolate *isolate,
 
       return enif_make_copy(env, erlWrapper->term);
     } else {
-      JsWrapper *jsWrapper = new JsWrapper(isolate,
+      JsWrapper *jsWrapper = new JsWrapper(vm,
           env, Persistent<Value>::New(value));
       return jsWrapper->resourceTerm;
     }

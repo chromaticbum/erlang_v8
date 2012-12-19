@@ -131,18 +131,18 @@ class VmContext {
 
 class JsWrapper {
   public:
-    Isolate *isolate;
+    Vm *vm;
     Persistent<Value> value;
     ErlJsWrapper *erlJsWrapper;
     ERL_NIF_TERM resourceTerm;
 
-    JsWrapper(Isolate *_isolate,
+    JsWrapper(Vm *_vm,
         ErlNifEnv *env, Persistent<Value> _value);
     ~JsWrapper();
 
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);
-    static ERL_NIF_TERM MakeTerm(Isolate *isolate,
+    static ERL_NIF_TERM MakeTerm(Vm *vm,
         ErlNifEnv *env,
         Local<Value> value);
     static ERL_NIF_TERM MakeTerm(ErlNifEnv *env,

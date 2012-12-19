@@ -25,7 +25,7 @@ static Handle<Value> WrapFun(const Arguments &args) {
 
   for(int i = 0; i < length; i++) {
   TRACE("WrapFun - 6\n");
-    terms[i] = JsWrapper::MakeTerm(erlWrapper->vmContext->vm->isolate, env, args[i]);
+    terms[i] = JsWrapper::MakeTerm(erlWrapper->vmContext->vm, env, args[i]);
   }
 
   ERL_NIF_TERM term = enif_make_tuple3(env,
