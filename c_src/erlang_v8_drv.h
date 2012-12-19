@@ -53,6 +53,9 @@ typedef enum {
 typedef struct {
   ErlNifPid pid;
   JsExecType type;
+  ErlNifEnv *env;
+  int arity;
+  ERL_NIF_TERM *terms;
   void *data;
 } JsExec;
 
@@ -123,22 +126,14 @@ class VmContext {
     void RunLoop();
     Handle<Value> Poll();
 
-    ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    ERL_NIF_TERM SendRunScript(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM originTerm,
-        ERL_NIF_TERM scriptTerm);
-    ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
+    ERL_NIF_TERM Send(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM term);
-    ERL_NIF_TERM SendSet(ErlNifEnv *env,
+    ERL_NIF_TERM Send(ErlNifEnv *returnEnv,
+        JsExecType type,
         ErlNifPid pid,
-        ERL_NIF_TERM wrapperTerm,
-        ERL_NIF_TERM fields);
-    ERL_NIF_TERM SendGet(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM wrapperTerm,
-        ERL_NIF_TERM fieldsTerm);
+        int arity,
+        const ERL_NIF_TERM *terms);
     ERL_NIF_TERM SendCall(ErlNifEnv *env,
         ErlNifPid pid,
         JsCallType type,
@@ -149,8 +144,6 @@ class VmContext {
         ErlNifPid pid,
         ERL_NIF_TERM type,
         ERL_NIF_TERM call);
-    ERL_NIF_TERM SendHeapStatistics(ErlNifEnv *env,
-        ErlNifPid pid);
 
     void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
     JsExec *ResetJsExec();
