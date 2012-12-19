@@ -1,2 +1,0 @@
--type vm() :: binary().
--type vm_context() :: binary().

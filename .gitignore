@@ -6,3 +6,4 @@ test/*.beam
 .eunit/
 
 erl_crash.dump
+*.plt
