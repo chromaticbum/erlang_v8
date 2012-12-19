@@ -96,29 +96,65 @@ void VmContext::PostResult(ErlNifPid pid,
   enif_send(NULL, &pid, env, result);
 }
 
+char *MakeBuffer(ErlNifBinary binary) {
+  char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
+  memcpy(buffer, binary.data, binary.size);
+  buffer[binary.size] = NULL;
+
+  return buffer;
+}
+
 void VmContext::ExecuteRunScript(JsExec *jsExec) {
   TRACE("VmContext::ExecuteRunScript\n");
   LHCST(this);
 
-  char *sourceBuffer = (char *)jsExec->data;
-  Handle<String> source = String::New(sourceBuffer);
-  Handle<Script> script = Script::Compile(source);
-  Local<Value> result = script->Run();
+  JsRunScript *jsRunScript = (JsRunScript *)jsExec->data;
+  ErlNifEnv *env = jsRunScript->env;
+  ERL_NIF_TERM originTerm = jsRunScript->originTerm;
+  ERL_NIF_TERM scriptTerm = jsRunScript->scriptTerm;
+  ErlNifBinary binary;
+  int arity, line;
+  const ERL_NIF_TERM *terms;
   ERL_NIF_TERM term;
 
-  ErlNifEnv *env = enif_alloc_env();
-  if(!result.IsEmpty()) {
-    term = JsWrapper::MakeTerm(this,
-        env, result);
+  if(enif_get_tuple(env, originTerm, &arity, &terms) &&
+      arity == 2 &&
+      enif_inspect_iolist_as_binary(env, terms[0], &binary) &&
+      enif_get_int(env, terms[1], &line)) {
+    char *buffer = MakeBuffer(binary);
+    Handle<String> resourceName = String::New(buffer);
+    Handle<Integer> resourceLine = Integer::New(line);
+    ScriptOrigin origin(resourceName, resourceLine);
+    free(buffer);
+
+    if(enif_inspect_iolist_as_binary(env, scriptTerm, &binary)) {
+      buffer = MakeBuffer(binary);
+      Handle<String> source = String::New(buffer);
+      Handle<Script> script = Script::Compile(source);
+      Local<Value> result = script->Run();
+
+      if(!result.IsEmpty()) {
+        term = JsWrapper::MakeTerm(this,
+            env, result);
+      } else {
+        term = MakeError(env,
+            JsWrapper::MakeTerm(env, COMPILER, trycatch));
+      }
+
+      free(buffer);
+    } else {
+      term = MakeError(env, "invalid_script");
+    } 
+
   } else {
-    term = MakeError(env, JsWrapper::MakeTerm(env, COMPILER, trycatch));
+    term = MakeError(env, "invalid_origin");
   }
 
   PostResult(jsExec->pid, env, term);
 
   enif_clear_env(env);
   enif_free_env(env);
-  free(sourceBuffer);
+  free(jsRunScript);
   free(jsExec);
 }
 
@@ -405,23 +441,21 @@ Handle<Value> VmContext::Poll() {
   return Poll();
 }
 
-ERL_NIF_TERM VmContext::SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
-  ErlNifBinary binary;
+ERL_NIF_TERM VmContext::SendRunScript(ErlNifEnv *env,
+    ErlNifPid pid,
+    ERL_NIF_TERM originTerm,
+    ERL_NIF_TERM scriptTerm) {
+  JsRunScript *jsRunScript = (JsRunScript *)malloc(sizeof(JsRunScript));
+  jsRunScript->env = enif_alloc_env();
+  jsRunScript->originTerm = enif_make_copy(jsRunScript->env, originTerm);
+  jsRunScript->scriptTerm = enif_make_copy(jsRunScript->env, scriptTerm);
 
-  if(enif_inspect_iolist_as_binary(env, term, &binary)) {
-    char *script = (char *)malloc((binary.size + 1) * sizeof(char));
-    memcpy(script, binary.data, binary.size);
-    script[binary.size] = NULL;
+  jsExec = (JsExec *)malloc(sizeof(JsExec));
+  jsExec->pid = pid;
+  jsExec->type = RUN_SCRIPT;
+  jsExec->data = jsRunScript;
 
-    jsExec = (JsExec *)malloc(sizeof(JsExec));
-    jsExec->pid = pid;
-    jsExec->type = RUN_SCRIPT;
-    jsExec->data = script;
-
-    return enif_make_atom(env, "ok");
-  } else {
-    return enif_make_badarg(env);
-  }
+  return enif_make_atom(env, "ok");
 }
 
 ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
@@ -558,7 +592,7 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, (char *)"run_script", length) == 0) {
-          result = SendRunScript(env, pid, command[1]);
+          result = SendRunScript(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"call", length) == 0) {
           result = SendCall(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {

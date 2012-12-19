@@ -9,6 +9,7 @@
 % VM Functions
 -export([
   run_script/2,
+  run_script/3,
   set/3,
   set/4,
   get/3,
@@ -30,6 +31,15 @@ new_context(Vm) ->
 set_context_server(Context, Server) ->
   v8nif:set_context_server(Context, Server).
 
+run_script(Context, Source) ->
+  run_script(Context, {<<"unknown">>, 0}, Source).
+
+run_script(Context, {File, Line}, Source) when is_list(File) ->
+  run_script(Context, {list_to_binary(File), Line}, Source);
+run_script(Context, {File, Line}, Source) ->
+  io:format("file is: ~p:~p~n", [File, Line]),
+  execute(Context, self(), {run_script, {File, Line}, Source}).
+
 set(Context, JsObject, FieldList) ->
   execute(Context, self(), {set, JsObject, FieldList}).
 
@@ -47,9 +57,6 @@ call(Context, Recv, Fun, Args) ->
 
 call_constructor(Context, Fun, Args) ->
   execute(Context, self(), {call, constructor, {Fun, Args}}).
-
-run_script(Context, Source) ->
-  execute(Context, self(), {run_script, Source}).
 
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).

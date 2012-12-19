@@ -10,6 +10,7 @@
 
 -export([
   run_script/1,
+  script_origin/1,
   fields/1,
   multi_fields/1,
   wrapped_fun/1,
@@ -19,6 +20,7 @@
 
 all() ->
   [run_script,
+   script_origin,
    fields,
    multi_fields,
    wrapped_fun,
@@ -49,6 +51,13 @@ run_script(Config) ->
   <<>> = ev8:run_script(C, <<"new Object()">>),
 
   {error, {js_compiler_error, _Info, _StackTrace}} = ev8:run_script(C, <<"i.myFun()">>),
+
+  ok.
+
+script_origin(Config) ->
+  C = ?config(context, Config),
+
+  undefined = ev8:run_script(C, {?FILE, ?LINE}, <<"undefined">>),
 
   ok.
 

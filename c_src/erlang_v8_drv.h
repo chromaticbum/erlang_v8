@@ -63,6 +63,12 @@ typedef struct {
 
 typedef struct {
   ErlNifEnv *env;
+  ERL_NIF_TERM originTerm;
+  ERL_NIF_TERM scriptTerm;
+} JsRunScript;
+
+typedef struct {
+  ErlNifEnv *env;
   ERL_NIF_TERM objectTerm;
   ERL_NIF_TERM fieldsTerm;
 } JsSet;
@@ -123,7 +129,10 @@ class VmContext {
     Handle<Value> Poll();
 
     ERL_NIF_TERM Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
-    ERL_NIF_TERM SendRunScript(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term);
+    ERL_NIF_TERM SendRunScript(ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM originTerm,
+        ERL_NIF_TERM scriptTerm);
     ERL_NIF_TERM SendCallRespond(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM term);
