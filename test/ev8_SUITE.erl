@@ -22,13 +22,13 @@ all() ->
    call].
 
 init_per_suite(Config) ->
-  ev8:start(),
+  erlang_v8:start(),
   Vm = ev8:new_vm(),
   Context = ev8:new_context(Vm),
   [{vm, Vm}, {context, Context} | Config].
 
 end_per_suite(Config) ->
-  ev8:stop(),
+  erlang_v8:stop(),
   Config.
 
 run_script(Config) ->

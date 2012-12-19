@@ -1,8 +1,6 @@
 -module(ev8).
 
 -export([
-  start/0,
-  stop/0,
   new_vm/0,
   new_context/1,
   set_context_server/2
@@ -19,12 +17,6 @@
   heap_statistics/1,
   call_respond/3
   ]).
-
-start() ->
-  application:start(erlang_v8).
-
-stop() ->
-  application:stop(erlang_v8).
 
 new_vm() ->
   v8nif:new_vm().
