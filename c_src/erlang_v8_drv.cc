@@ -34,17 +34,17 @@ static ERL_NIF_TERM NewContext(ErlNifEnv *env,
   }
 }
 
-static ERL_NIF_TERM SetContextServer(ErlNifEnv *env,
+static ERL_NIF_TERM SetVmServer(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
-  ErlVmContext *erlVmContext;
+  ErlVm *erlVm;
 
-  if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
-    VmContext *vmContext = erlVmContext->vmContext;
+  if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
+    Vm *vm = erlVm->vm;
     ErlNifPid server;
 
     if(enif_get_local_pid(env, argv[1], &server)) {
-      vmContext->SetServer(server);
+      vm->SetServer(server);
 
       return enif_make_atom(env, "ok");
     } else {
@@ -102,8 +102,8 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
+  {"set_vm_server", 2, SetVmServer},
   {"new_context", 1, NewContext},
-  {"set_context_server", 2, SetContextServer},
   {"execute", 3, Execute}
 };
 

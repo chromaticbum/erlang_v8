@@ -1,4 +1,4 @@
--module(v8context_sup).
+-module(v8vm_sup).
 
 -behaviour(supervisor).
 
@@ -44,10 +44,10 @@ start_link() ->
 %% @end
 %%--------------------------------------------------------------------
 init([]) ->
-  V8ContextSpec = {v8context_srv,
-                   {v8context_srv, start_link, []},
-                   temporary, 5000, worker, [v8context_srv]},
-  {ok, {{simple_one_for_one, 5, 10}, [V8ContextSpec]}}.
+  V8VmSpec = {v8vm_srv,
+                   {v8vm_srv, start_link, []},
+                   temporary, 5000, worker, [v8vm_srv]},
+  {ok, {{simple_one_for_one, 5, 10}, [V8VmSpec]}}.
 
 %%%===================================================================
 %%% Internal functions

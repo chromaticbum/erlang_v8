@@ -13,39 +13,32 @@ static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
 static Handle<Value> WrapFun(const Arguments &args) {
   TRACE("WrapFun\n");
   Handle<External> external = Local<External>::Cast(args.Data());
-  TRACE("WrapFun - 1\n");
   ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
-  TRACE("WrapFun - 2\n");
   ErlNifEnv *env = enif_alloc_env();
-  TRACE("WrapFun - 3\n");
   unsigned length = args.Length();
-  TRACE("WrapFun - 4\n");
   ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
-  TRACE("WrapFun - 5\n");
 
   for(int i = 0; i < length; i++) {
-  TRACE("WrapFun - 6\n");
-    terms[i] = JsWrapper::MakeTerm(erlWrapper->vmContext->vm, env, args[i]);
+    terms[i] = JsWrapper::MakeTerm(erlWrapper->vm, env, args[i]);
   }
 
-  ERL_NIF_TERM term = enif_make_tuple3(env,
+  ERL_NIF_TERM term = enif_make_tuple4(env,
       enif_make_atom(env, "call"),
+      erlWrapper->vm->CurrentContext()->MakeTerm(env),
       enif_make_copy(env, erlWrapper->term),
       enif_make_list_from_array(env, terms, length)
       );
-  TRACE("WrapFun - 7\n");
-  enif_send(NULL, &(erlWrapper->vmContext->server), env, term);
-  TRACE("WrapFun - 8\n");
+  enif_send(NULL, &(erlWrapper->vm->server), env, term);
   free(terms);
   enif_clear_env(env);
   enif_free_env(env);
   // TODO error handling
 
-  return erlWrapper->vmContext->vm->Poll();
+  return erlWrapper->vm->Poll();
 }
 
-ErlWrapper::ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term) {
-  vmContext = _vmContext;
+ErlWrapper::ErlWrapper(Vm *_vm, ERL_NIF_TERM _term) {
+  vm = _vm;
   env = enif_alloc_env();
   term = enif_make_copy(env, _term);
 }
@@ -64,7 +57,7 @@ Persistent<External> ErlWrapper::MakeExternal() {
   return external;
 }
 
-Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
+Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     ErlNifEnv *env,
     ERL_NIF_TERM term) {
   int _int;
@@ -123,11 +116,11 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     free(buffer);
   } else if(enif_is_fun(env, term)) {
     TRACE("ErlWrapper::MakeHandle - FUN\n");
-    ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
+    ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else {
-    ErlWrapper *erlWrapper = new ErlWrapper(vmContext, term);
+    ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     value = Local<External>::New(erlWrapper->MakeExternal());
   }
 

@@ -37,6 +37,14 @@ Vm::~Vm() {
   enif_mutex_destroy(mutex);
 }
 
+void Vm::SetServer(ErlNifPid pid) {
+  server = pid; 
+}
+
+VmContext *Vm::CurrentContext() {
+  return contextStack.top();
+}
+
 VmContext *Vm::CreateVmContext(ErlNifEnv *env) {
   return new VmContext(this, env);
 }
@@ -64,9 +72,15 @@ Handle<Value> Vm::Poll() {
   }
   TRACE("Vm::Poll - 4\n");
   JsExec *jsExec2 = ResetJsExec();
+  Handle<Value> v;
+  VmContext *vmContext = jsExec2->vmContext;
   enif_mutex_lock(mutex2);
   enif_cond_broadcast(cond2);
   enif_mutex_unlock(mutex2);
+
+  if(vmContext) {
+    contextStack.push(vmContext);
+  }
 
   TRACE("Vm::Poll - 5\n");
   switch(jsExec2->type) {
@@ -89,10 +103,19 @@ Handle<Value> Vm::Poll() {
       Exit(jsExec2);
       break;
     case CALL_RESPOND:
-      return ExecuteCallRespond(jsExec2);
+      v = ExecuteCallRespond(jsExec2);
+      if(vmContext) {
+        contextStack.pop();
+      }
+      return v;
     default:
       TRACE("Vm::Poll - Default\n");
   }
+
+  if(vmContext) {
+    contextStack.pop();
+  }
+
   TRACE("Vm::Poll - 6\n");
   return Poll();
 }
@@ -113,6 +136,7 @@ void Vm::Stop() {
   TRACE("Vm::Stop\n");
   jsExec = (JsExec *)malloc(sizeof(JsExec));
   jsExec->type = EXIT;
+  jsExec->vmContext = NULL;
   enif_cond_broadcast(cond);
 
   void *result;
@@ -235,7 +259,7 @@ void Vm::ExecuteSet(JsExec *jsExec) {
     ERL_NIF_TERM objectTerm = jsExec->terms[0];
     ERL_NIF_TERM fieldsTerm = jsExec->terms[1];
 
-    Handle<Value> value = ErlWrapper::MakeHandle(jsExec->vmContext,
+    Handle<Value> value = ErlWrapper::MakeHandle(this,
       env, objectTerm);
 
     if(value->IsObject()) {
@@ -243,9 +267,9 @@ void Vm::ExecuteSet(JsExec *jsExec) {
 
       while(enif_get_list_cell(env, fieldsTerm, &head, &fieldsTerm)) {
         if(enif_get_tuple(env, head, &arity, &terms) && arity == 2) {
-          Local<Value> field = ErlWrapper::MakeHandle(jsExec->vmContext,
+          Local<Value> field = ErlWrapper::MakeHandle(this,
               env, terms[0]);
-          Local<Value> fieldValue = ErlWrapper::MakeHandle(jsExec->vmContext,
+          Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
               env, terms[1]);
 
           obj->Set(field, fieldValue);
@@ -279,12 +303,12 @@ void Vm::ExecuteGet(JsExec *jsExec) {
     ERL_NIF_TERM objectTerm = jsExec->terms[0];
     ERL_NIF_TERM fieldTerm = jsExec->terms[1];
 
-    Handle<Value> value = ErlWrapper::MakeHandle(jsExec->vmContext,
+    Handle<Value> value = ErlWrapper::MakeHandle(this,
       env, objectTerm);
 
     if(value->IsObject()) {
       Handle<Object> obj = value->ToObject();
-      Local<Value> fieldHandle = ErlWrapper::MakeHandle(jsExec->vmContext,
+      Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
           env, fieldTerm);
       Local<Value> fieldValue = obj->Get(fieldHandle);
 
@@ -303,13 +327,12 @@ void Vm::ExecuteGet(JsExec *jsExec) {
   free(jsExec);
 }
 
-ERL_NIF_TERM Vm::ExecuteCall(VmContext *vmContext,
-    JsCallType type,
+ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
     ErlNifEnv *env,
     ERL_NIF_TERM recvTerm,
     ERL_NIF_TERM funTerm,
     ERL_NIF_TERM argsTerm) {
-  Handle<Value> fun = ErlWrapper::MakeHandle(vmContext,
+  Handle<Value> fun = ErlWrapper::MakeHandle(this,
           env, funTerm);
   ERL_NIF_TERM head;
 
@@ -321,14 +344,14 @@ ERL_NIF_TERM Vm::ExecuteCall(VmContext *vmContext,
       int i = 0;
 
       while(enif_get_list_cell(env, argsTerm, &head, &argsTerm)) {
-        args[i] = ErlWrapper::MakeHandle(vmContext,
+        args[i] = ErlWrapper::MakeHandle(this,
             env, head);
         i++;
       }
 
       if(type == NORMAL) {
         Handle<Object> recv;
-        Handle<Value> recvValue = ErlWrapper::MakeHandle(vmContext,
+        Handle<Value> recvValue = ErlWrapper::MakeHandle(this,
             env, recvTerm);
 
         if(recvValue->IsObject()) {
@@ -377,16 +400,14 @@ void Vm::ExecuteCall(JsExec *jsExec) {
 
       if(strncmp(buffer, "normal", length) == 0) {
         if(arity == 3) {
-          term = ExecuteCall(jsExec->vmContext,
-              NORMAL,
+          term = ExecuteCall(NORMAL,
               env, terms[0], terms[1], terms[2]);
         } else {
           term = MakeError(env, "badcallarity");
         }
       } else if(strncmp(buffer, "constructor", length) == 0) {
         if(arity == 2) {
-          term = ExecuteCall(jsExec->vmContext,
-              CONSTRUCTOR,
+          term = ExecuteCall(CONSTRUCTOR,
               env, 0, terms[1], terms[2]);
         } else {
           term = MakeError(env, "badcallarity");
@@ -431,7 +452,7 @@ Handle<Value> Vm::ExecuteCallRespond(JsExec *jsExec) {
         char *buffer = (char *)malloc((length + 1) * sizeof(char));
         enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1);
         if(strncmp(buffer, "ok", length) == 0) {
-          value = ErlWrapper::MakeHandle(jsExec->vmContext, env, terms[1]);
+          value = ErlWrapper::MakeHandle(this, env, terms[1]);
         } else if(strncmp(buffer, "error", length) == 0) {
           value = ThrowException(Exception::Error(String::New("erlang function returned error")));
         } else {
@@ -530,11 +551,12 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, "run_script", length) == 0) {
-  TRACE("Vm::Send - 1\n");
+          TRACE("Vm::Send - 1\n");
           result = Send(vmContext, env, RUN_SCRIPT, pid, arity, command);
         } else if(strncmp(buffer, "call", length) == 0) {
           result = Send(vmContext, env, CALL, pid, arity, command);
         } else if(strncmp(buffer, "call_respond", length) == 0) {
+          TRACE("CALL - 1\n");
           result = Send(vmContext, env, CALL_RESPOND, pid, arity, command);
         } else if(strncmp(buffer, "set", length) == 0) {
           result = Send(vmContext, env, SET, pid, arity, command);

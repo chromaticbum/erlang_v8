@@ -2,6 +2,7 @@
 #include "erlang/erl_nif.h"
 #include <string.h>
 #include <string>
+#include <stack>
 
 using namespace v8;
 using namespace std;
@@ -70,9 +71,14 @@ class Vm {
     ErlNifCond *cond, *cond2;
     ErlNifMutex *mutex, *mutex2;
     JsExec *jsExec;
+    ErlNifPid server;
+    stack<VmContext *> contextStack;
 
     Vm(ErlNifEnv *_env);
     ~Vm();
+
+    void SetServer(ErlNifPid pid);
+    VmContext *CurrentContext();
 
     VmContext *CreateVmContext(ErlNifEnv *env);
     void Run();
@@ -83,8 +89,7 @@ class Vm {
     void ExecuteRunScript(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
     void ExecuteGet(JsExec *jsExec);
-    ERL_NIF_TERM ExecuteCall(VmContext *vmContext,
-        JsCallType type,
+    ERL_NIF_TERM ExecuteCall(JsCallType type,
         ErlNifEnv *env,
         ERL_NIF_TERM recvTerm,
         ERL_NIF_TERM funTerm,
@@ -117,15 +122,12 @@ class VmContext {
   public:
     Vm *vm;
     Persistent<Context> context;
-    ErlNifPid server;
     ErlVmContext *erlVmContext;
-    ErlNifTid tid;
     ERL_NIF_TERM term;
 
     VmContext(Vm *_vm, ErlNifEnv *env);
     ~VmContext();
 
-    void SetServer(ErlNifPid pid);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
 };
 
@@ -151,16 +153,16 @@ class JsWrapper {
 
 class ErlWrapper {
   public:
+    Vm *vm;
     ErlNifEnv *env;
-    VmContext *vmContext;
     ERL_NIF_TERM term;
     Persistent<Value> persistent;
 
-    ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term);
+    ErlWrapper(Vm *_vm, ERL_NIF_TERM _term);
     ~ErlWrapper();
 
     Persistent<External> MakeExternal();
-    static Local<Value> MakeHandle(VmContext *vmContext,
+    static Local<Value> MakeHandle(Vm *vm,
         ErlNifEnv *env,
         ERL_NIF_TERM term);
 };

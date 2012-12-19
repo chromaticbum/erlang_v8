@@ -2,8 +2,8 @@
 
 -export([
   new_vm/0,
-  new_context/1,
-  set_context_server/2
+  set_vm_server/2,
+  new_context/1
   ]).
 
 % VM Functions
@@ -21,15 +21,16 @@
   ]).
 
 new_vm() ->
-  v8nif:new_vm().
+  Vm = v8nif:new_vm(),
+  {ok, _Pid} = v8vm_srv:create(Vm),
+  Vm.
+
+set_vm_server(Vm, Server) ->
+  v8nif:set_vm_server(Vm, Server).
 
 new_context(Vm) ->
   Ctx = v8nif:new_context(Vm),
-  {ok, _Pid} = v8context_srv:create(Ctx),
   Ctx.
-
-set_context_server(Context, Server) ->
-  v8nif:set_context_server(Context, Server).
 
 run_script(Context, Source) ->
   run_script(Context, {<<"unknown">>, 0}, Source).

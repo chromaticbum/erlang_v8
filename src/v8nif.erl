@@ -4,8 +4,8 @@
 -export([
   init/0,
   new_vm/0,
+  set_vm_server/2,
   new_context/1,
-  set_context_server/2,
   execute/3
   ]).
 
@@ -24,12 +24,12 @@ init() ->
 new_vm() ->
   error(not_loaded).
 
--spec new_context(vm()) -> vm_context().
-new_context(_Vm) ->
+-spec set_vm_server(vm(), pid()) -> ok.
+set_vm_server(_Vm, _Server) ->
   error(not_loaded).
 
--spec set_context_server(vm_context(), pid()) -> ok.
-set_context_server(_Ctx, _Server) ->
+-spec new_context(vm()) -> vm_context().
+new_context(_Vm) ->
   error(not_loaded).
 
 -spec execute(vm_context(), pid(), binary()) -> Result

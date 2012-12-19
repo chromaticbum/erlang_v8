@@ -26,10 +26,6 @@ VmContext::~VmContext() {
   enif_release_resource(vm->erlVm);
 }
 
-void VmContext::SetServer(ErlNifPid pid) {
-  server = pid; 
-}
-
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
   TRACE("Vm::MakeTerm\n");
   return enif_make_resource(env, erlVmContext);

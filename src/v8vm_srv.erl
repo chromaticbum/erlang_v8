@@ -1,4 +1,4 @@
--module(v8context_srv).
+-module(v8vm_srv).
 
 -behaviour(gen_server).
 
@@ -15,14 +15,14 @@
          code_change/3]).
 
 -record(state, {
-    context}).
+    vm}).
 
 %%%===================================================================
 %%% API
 %%%===================================================================
 
-create(Context) ->
-  v8context_sup:start_child(Context).
+create(Vm) ->
+  v8vm_sup:start_child(Vm).
 
 %%--------------------------------------------------------------------
 %% @doc
@@ -31,8 +31,8 @@ create(Context) ->
 %% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link(Context) ->
-  gen_server:start_link(?MODULE, [Context], []).
+start_link(Vm) ->
+  gen_server:start_link(?MODULE, [Vm], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -49,10 +49,10 @@ start_link(Context) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Context]) ->
-  ev8:set_context_server(Context, self()),
+init([Vm]) ->
+  ev8:set_vm_server(Vm, self()),
   {ok, #state{
-      context = Context}}.
+      vm = Vm}}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -95,9 +95,8 @@ handle_cast(_Msg, State) ->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
-handle_info({call, Fun, Args}, State) ->
+handle_info({call, Context, Fun, Args}, State) ->
   io:format("Calle: ~p~n", [Args]),
-  Context = State#state.context,
   {ok, Pid} = v8call_srv:create(Context),
   v8call_srv:call(Pid, Fun, Args),
   {noreply, State};
