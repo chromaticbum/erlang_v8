@@ -157,7 +157,8 @@ void VmContext::ExecuteSet(JsExec *jsExec) {
   ErlNifEnv *env = jsSet->env;
   ERL_NIF_TERM fieldsTerm = jsSet->fieldsTerm;
   ERL_NIF_TERM head;
-  Handle<Value> value = jsSet->jsWrapper->value;
+  Handle<Value> value = ErlWrapper::MakeHandle(this,
+      env, jsSet->objectTerm);
   ERL_NIF_TERM term;
   int arity;
   const ERL_NIF_TERM *terms;
@@ -195,13 +196,14 @@ void VmContext::ExecuteGet(JsExec *jsExec) {
 
   JsGet *jsGet = (JsGet*)jsExec->data;
   ErlNifEnv *env = jsGet->env;
-  JsWrapper *jsWrapper = jsGet->jsWrapper;
   ERL_NIF_TERM term;
+  Handle<Value> value = ErlWrapper::MakeHandle(this,
+      env, jsGet->objectTerm);
 
-  if(jsWrapper->value->IsObject()) {
-    Handle<Object> obj = jsWrapper->value->ToObject();
+  if(value->IsObject()) {
+    Handle<Object> obj = value->ToObject();
     Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
-        env, jsGet->term);
+        env, jsGet->fieldTerm);
     Local<Value> fieldValue = obj->Get(fieldHandle);
 
     term = JsWrapper::MakeTerm(this,
@@ -438,54 +440,36 @@ ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
 
 ERL_NIF_TERM VmContext::SendSet(ErlNifEnv *env,
     ErlNifPid pid,
-    ERL_NIF_TERM wrapperTerm,
+    ERL_NIF_TERM objectTerm,
     ERL_NIF_TERM fieldsTerm) {
-  ErlJsWrapper *erlJsWrapper;
+  JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
+  jsSet->env = enif_alloc_env();
+  jsSet->objectTerm = enif_make_copy(jsSet->env, objectTerm);
+  jsSet->fieldsTerm = enif_make_copy(jsSet->env, fieldsTerm);
 
-  if(enif_get_resource(env, wrapperTerm, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    ErlNifBinary binary;
+  jsExec = (JsExec *)malloc(sizeof(JsExec));
+  jsExec->pid = pid;
+  jsExec->type = SET;
+  jsExec->data = jsSet;
 
-    char *field = (char *)malloc((binary.size + 1) * sizeof(char));
-    memcpy(field, binary.data, binary.size);
-    field[binary.size] = NULL;
-
-    JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
-    jsSet->jsWrapper = erlJsWrapper->jsWrapper;
-    jsSet->env = enif_alloc_env();
-    jsSet->fieldsTerm = enif_make_copy(jsSet->env, fieldsTerm);
-
-    jsExec = (JsExec *)malloc(sizeof(JsExec));
-    jsExec->pid = pid;
-    jsExec->type = SET;
-    jsExec->data = jsSet;
-
-    return enif_make_atom(env, "ok");
-  } else {
-    return enif_make_badarg(env);
-  }
+  return enif_make_atom(env, "ok");
 }
 
 ERL_NIF_TERM VmContext::SendGet(ErlNifEnv *env,
     ErlNifPid pid,
-    ERL_NIF_TERM wrapperTerm,
+    ERL_NIF_TERM objectTerm,
     ERL_NIF_TERM fieldTerm) {
-  ErlJsWrapper *erlJsWrapper;
+  JsGet *jsGet = (JsGet*)malloc(sizeof(JsGet));
+  jsGet->env = enif_alloc_env();
+  jsGet->objectTerm = enif_make_copy(jsGet->env, objectTerm);
+  jsGet->fieldTerm = enif_make_copy(jsGet->env, fieldTerm);
 
-  if(enif_get_resource(env, wrapperTerm, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    JsGet *jsGet = (JsGet*)malloc(sizeof(JsGet));
-    jsGet->jsWrapper = erlJsWrapper->jsWrapper;
-    jsGet->env = enif_alloc_env();
-    jsGet->term = enif_make_copy(jsGet->env, fieldTerm);
+  jsExec = (JsExec *)malloc(sizeof(JsExec));
+  jsExec->pid = pid;
+  jsExec->type = GET;
+  jsExec->data = jsGet;
 
-    jsExec = (JsExec *)malloc(sizeof(JsExec));
-    jsExec->pid = pid;
-    jsExec->type = GET;
-    jsExec->data = jsGet;
-
-    return enif_make_atom(env, "ok");
-  } else {
-    return enif_make_badarg(env);
-  }
+  return enif_make_atom(env, "ok");
 }
 
 ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
@@ -508,7 +492,6 @@ ERL_NIF_TERM VmContext::SendCall(ErlNifEnv *env,
   jsExec->type = CALL;
   jsExec->data = jsCall;
 
-  TRACE("VmContext::SendCall(term) - 2\n");
   return enif_make_atom(env, "ok");
 }
 

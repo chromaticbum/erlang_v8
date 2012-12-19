@@ -13,7 +13,8 @@
   fields/1,
   multi_fields/1,
   wrapped_fun/1,
-  call/1
+  call/1,
+  global/1
   ]).
 
 all() ->
@@ -21,7 +22,8 @@ all() ->
    fields,
    multi_fields,
    wrapped_fun,
-   call].
+   call,
+   global].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -74,8 +76,8 @@ fields(Config) ->
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
 
-  {'EXIT',{badarg,_}} = (catch ev8:get(C, 2, <<"heyThere">>)),
-  {'EXIT',{badarg,_}} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),
+  {error, invalid_object} = (catch ev8:get(C, 2, <<"heyThere">>)),
+  {error, invalid_object} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),
 
   FieldObj = ev8:run_script(C, <<"new Object">>),
   ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),
@@ -127,5 +129,13 @@ call(Config) ->
   {error, args_not_list} = ev8:call(C, Obj, Fun, <<",">>),
 
   1337 = ev8:call(C, Fun2, [1330, 7]),
+
+  ok.
+
+global(Config) ->
+  C = ?config(context, Config),
+
+  ev8:set(C, global, <<"globalProp">>, 1337),
+  1337 = ev8:run_script(C, <<"globalProp">>),
 
   ok.

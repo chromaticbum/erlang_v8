@@ -62,15 +62,15 @@ typedef struct {
 } JsExec;
 
 typedef struct {
-  JsWrapper *jsWrapper;
   ErlNifEnv *env;
+  ERL_NIF_TERM objectTerm;
   ERL_NIF_TERM fieldsTerm;
 } JsSet;
 
 typedef struct {
-  JsWrapper *jsWrapper;
   ErlNifEnv *env;
-  ERL_NIF_TERM term;
+  ERL_NIF_TERM objectTerm;
+  ERL_NIF_TERM fieldTerm;
 } JsGet;
 
 typedef struct {

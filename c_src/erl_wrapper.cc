@@ -82,14 +82,16 @@ Local<Value> ErlWrapper::MakeHandle(VmContext *vmContext,
     char *buffer = (char *)malloc((_uint + 1) * sizeof(char));
     enif_get_atom(env, term, buffer, _uint + 1, ERL_NIF_LATIN1);
 
-    if(strncmp(buffer, (char *)"undefined", _uint) == 0) {
+    if(strncmp(buffer, "undefined", _uint) == 0) {
       value = Local<Value>::New(Undefined());
-    } else if(strncmp(buffer, (char *)"null", _uint) == 0) {
+    } else if(strncmp(buffer, "null", _uint) == 0) {
       value = Local<Value>::New(Null());
-    } else if(strncmp(buffer, (char *)"true", _uint) == 0) {
+    } else if(strncmp(buffer, "true", _uint) == 0) {
       value = Local<Value>::New(True());
-    } else if(strncmp(buffer, (char *)"false", _uint) == 0) {
+    } else if(strncmp(buffer, "false", _uint) == 0) {
       value = Local<Value>::New(False());
+    } else if(strncmp(buffer, "global", _uint) == 0) {
+      value = Context::GetCurrent()->Global();
     } else {
       value = Local<Value>::New(Undefined());
     }
