@@ -20,14 +20,17 @@
   call_respond/3
   ]).
 
+-spec new_vm() -> v8nif:vm().
 new_vm() ->
   Vm = v8nif:new_vm(),
   {ok, _Pid} = v8vm_srv:create(Vm),
   Vm.
 
+-spec set_vm_server(v8nif:vm(), pid()) -> ok.
 set_vm_server(Vm, Server) ->
   v8nif:set_vm_server(Vm, Server).
 
+-spec new_context(v8nif:vm()) -> v8nif:vm_context().
 new_context(Vm) ->
   Ctx = v8nif:new_context(Vm),
   Ctx.

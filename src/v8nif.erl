@@ -11,6 +11,17 @@
 
 -include("erlang_v8.hrl").
 
+-export_type([
+    vm/0,
+    vm_context/0,
+    command/0,
+    cmd_heap_statistics/0,
+    cmd_call_respond/0,
+    cmd_run_script/0,
+    cmd_set/0,
+    cmd_get/0
+    ]).
+
 -type vm() :: binary().
 -type vm_context() :: binary().
 
