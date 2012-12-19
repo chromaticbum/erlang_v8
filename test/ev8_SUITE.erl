@@ -57,7 +57,8 @@ run_script(Config) ->
 script_origin(Config) ->
   C = ?config(context, Config),
 
-  undefined = ev8:run_script(C, {?FILE, ?LINE}, <<"undefined">>),
+  {error, {js_compiler_error, _Info, StackTrace}} = ev8:run_script(C, {"my_origin.erl", 120}, <<"iDontExist">>),
+  true = string:str(binary_to_list(StackTrace), "my_origin.erl:120:1") > 0,
 
   ok.
 

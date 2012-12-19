@@ -123,14 +123,14 @@ void VmContext::ExecuteRunScript(JsExec *jsExec) {
       enif_get_int(env, terms[1], &line)) {
     char *buffer = MakeBuffer(binary);
     Handle<String> resourceName = String::New(buffer);
-    Handle<Integer> resourceLine = Integer::New(line);
+    Handle<Integer> resourceLine = Integer::New(line - 1);
     ScriptOrigin origin(resourceName, resourceLine);
     free(buffer);
 
     if(enif_inspect_iolist_as_binary(env, scriptTerm, &binary)) {
       buffer = MakeBuffer(binary);
       Handle<String> source = String::New(buffer);
-      Handle<Script> script = Script::Compile(source);
+      Handle<Script> script = Script::Compile(source, &origin);
       Local<Value> result = script->Run();
 
       if(!result.IsEmpty()) {
