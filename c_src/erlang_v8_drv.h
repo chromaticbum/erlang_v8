@@ -64,8 +64,7 @@ typedef struct {
 typedef struct {
   JsWrapper *jsWrapper;
   ErlNifEnv *env;
-  ERL_NIF_TERM fieldTerm;
-  ERL_NIF_TERM term;
+  ERL_NIF_TERM fieldsTerm;
 } JsSet;
 
 typedef struct {
@@ -131,12 +130,11 @@ class VmContext {
     ERL_NIF_TERM SendSet(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
-        ERL_NIF_TERM fieldTerm,
-        ERL_NIF_TERM term);
+        ERL_NIF_TERM fields);
     ERL_NIF_TERM SendGet(ErlNifEnv *env,
         ErlNifPid pid,
         ERL_NIF_TERM wrapperTerm,
-        ERL_NIF_TERM fieldTerm);
+        ERL_NIF_TERM fieldsTerm);
     ERL_NIF_TERM SendCall(ErlNifEnv *env,
         ErlNifPid pid,
         JsCallType type,

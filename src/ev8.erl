@@ -9,6 +9,7 @@
 % VM Functions
 -export([
   run_script/2,
+  set/3,
   set/4,
   get/3,
   call/3,
@@ -29,8 +30,11 @@ new_context(Vm) ->
 set_context_server(Context, Server) ->
   v8nif:set_context_server(Context, Server).
 
+set(Context, JsObject, FieldList) ->
+  execute(Context, self(), {set, JsObject, FieldList}).
+
 set(Context, JsObject, Field, Term) ->
-  execute(Context, self(), {set, JsObject, Field, Term}).
+  set(Context, JsObject, [{Field, Term}]).
 
 get(Context, JsObject, Field) ->
   execute(Context, self(), {get, JsObject, Field}).

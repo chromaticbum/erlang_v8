@@ -155,21 +155,28 @@ void VmContext::ExecuteSet(JsExec *jsExec) {
 
   JsSet *jsSet = (JsSet*)jsExec->data;
   ErlNifEnv *env = jsSet->env;
-  ERL_NIF_TERM termValue = jsSet->term;
-  ERL_NIF_TERM fieldTerm = jsSet->fieldTerm;
+  ERL_NIF_TERM fieldsTerm = jsSet->fieldsTerm;
+  ERL_NIF_TERM head;
   Handle<Value> value = jsSet->jsWrapper->value;
   ERL_NIF_TERM term;
+  int arity;
+  const ERL_NIF_TERM *terms;
 
   if(value->IsObject()) {
     Handle<Object> obj = value->ToObject();
-    Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
-        env, fieldTerm);
-    Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
-        env, termValue);
-    obj->Set(fieldHandle, fieldValue);
 
-    term = JsWrapper::MakeTerm(this,
-        env, fieldValue);
+    while(enif_get_list_cell(env, fieldsTerm, &head, &fieldsTerm)) {
+      if(enif_get_tuple(env, head, &arity, &terms) && arity == 2) {
+        Local<Value> field = ErlWrapper::MakeHandle(this,
+            env, terms[0]);
+        Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
+            env, terms[1]);
+
+        obj->Set(field, fieldValue);
+      }
+    }
+
+    term = enif_make_atom(env, "ok");
   } else {
     term = MakeError(env, "invalid_object");
   }
@@ -432,33 +439,27 @@ ERL_NIF_TERM VmContext::SendCallRespond(ErlNifEnv *env,
 ERL_NIF_TERM VmContext::SendSet(ErlNifEnv *env,
     ErlNifPid pid,
     ERL_NIF_TERM wrapperTerm,
-    ERL_NIF_TERM fieldTerm,
-    ERL_NIF_TERM term) {
+    ERL_NIF_TERM fieldsTerm) {
   ErlJsWrapper *erlJsWrapper;
 
   if(enif_get_resource(env, wrapperTerm, JsWrapperResource, (void **)(&erlJsWrapper))) {
     ErlNifBinary binary;
 
-    if(enif_inspect_binary(env, fieldTerm, &binary)) {
-      char *field = (char *)malloc((binary.size + 1) * sizeof(char));
-      memcpy(field, binary.data, binary.size);
-      field[binary.size] = NULL;
+    char *field = (char *)malloc((binary.size + 1) * sizeof(char));
+    memcpy(field, binary.data, binary.size);
+    field[binary.size] = NULL;
 
-      JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
-      jsSet->jsWrapper = erlJsWrapper->jsWrapper;
-      jsSet->env = enif_alloc_env();
-      jsSet->fieldTerm = enif_make_copy(jsSet->env, fieldTerm);
-      jsSet->term = enif_make_copy(jsSet->env, term);
+    JsSet *jsSet = (JsSet *)malloc(sizeof(JsSet));
+    jsSet->jsWrapper = erlJsWrapper->jsWrapper;
+    jsSet->env = enif_alloc_env();
+    jsSet->fieldsTerm = enif_make_copy(jsSet->env, fieldsTerm);
 
-      jsExec = (JsExec *)malloc(sizeof(JsExec));
-      jsExec->pid = pid;
-      jsExec->type = SET;
-      jsExec->data = jsSet;
+    jsExec = (JsExec *)malloc(sizeof(JsExec));
+    jsExec->pid = pid;
+    jsExec->type = SET;
+    jsExec->data = jsSet;
 
-      return enif_make_atom(env, "ok");
-    } else {
-      return enif_make_badarg(env);
-    }
+    return enif_make_atom(env, "ok");
   } else {
     return enif_make_badarg(env);
   }
@@ -576,12 +577,11 @@ ERL_NIF_TERM VmContext::Send(ErlNifEnv *env, ErlNifPid pid, ERL_NIF_TERM term) {
         if(strncmp(buffer, (char *)"run_script", length) == 0) {
           result = SendRunScript(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"call", length) == 0) {
-          TRACE("CCCCALALALAL\n");
           result = SendCall(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"call_respond", length) == 0) {
           result = SendCallRespond(env, pid, command[1]);
         } else if(strncmp(buffer, (char *)"set", length) == 0) {
-          result = SendSet(env, pid, command[1], command[2], command[3]);
+          result = SendSet(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"get", length) == 0) {
           result = SendGet(env, pid, command[1], command[2]);
         } else if(strncmp(buffer, (char *)"heap_statistics", length) == 0) {

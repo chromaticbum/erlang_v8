@@ -11,6 +11,7 @@
 -export([
   run_script/1,
   fields/1,
+  multi_fields/1,
   wrapped_fun/1,
   call/1
   ]).
@@ -18,6 +19,7 @@
 all() ->
   [run_script,
    fields,
+   multi_fields,
    wrapped_fun,
    call].
 
@@ -78,6 +80,24 @@ fields(Config) ->
   FieldObj = ev8:run_script(C, <<"new Object">>),
   ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, FieldObj),
+
+  ok.
+
+multi_fields(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:run_script(C, <<"new Object">>),
+  FieldObj = ev8:run_script(C, <<"new Object">>),
+
+  ev8:set(C, Obj, [{FieldObj, <<"fieldObj">>},
+                   {true, <<"true">>},
+                   {false, <<"false">>},
+                   does_nothing]),
+
+  <<"fieldObj">> = ev8:get(C, Obj, FieldObj),
+  <<"true">> = ev8:get(C, Obj, true),
+  <<"false">> = ev8:get(C, Obj, false),
+  undefined = ev8:get(C, Obj, does_nothing),
 
   ok.
 
