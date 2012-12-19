@@ -77,13 +77,13 @@ static ERL_NIF_TERM Execute(ErlNifEnv *env,
 
   if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
     VmContext *vmContext = erlVmContext->vmContext;
-    enif_mutex_lock(vmContext->mutex);
-    enif_mutex_lock(vmContext->mutex2);
+    enif_mutex_lock(vmContext->vm->mutex);
+    enif_mutex_lock(vmContext->vm->mutex2);
     ErlNifPid pid;
 
     if(enif_get_local_pid(env, argv[1], &pid)) {
       TRACE("Execute - 1\n");
-      return vmContext->Send(env, pid, argv[2]);
+      return vmContext->vm->Send(vmContext, env, pid, argv[2]);
     } else {
       return enif_make_badarg(env);
     }

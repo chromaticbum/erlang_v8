@@ -41,7 +41,7 @@ static Handle<Value> WrapFun(const Arguments &args) {
   enif_free_env(env);
   // TODO error handling
 
-  return erlWrapper->vmContext->Poll();
+  return erlWrapper->vmContext->vm->Poll();
 }
 
 ErlWrapper::ErlWrapper(VmContext *_vmContext, ERL_NIF_TERM _term) {

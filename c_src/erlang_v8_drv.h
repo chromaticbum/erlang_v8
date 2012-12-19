@@ -6,11 +6,11 @@
 using namespace v8;
 using namespace std;
 
-#define LHCST(obj) \
-  Locker locker(obj->vm->isolate); \
-  Isolate::Scope iscop(obj->vm->isolate); \
+#define LHCST(vm, vmContext) \
+  Locker locker(vm->isolate); \
+  Isolate::Scope iscop(vm->isolate); \
   HandleScope handle_scope; \
-  Context::Scope context_scope(obj->context); \
+  Context::Scope context_scope(vmContext->context); \
   TryCatch trycatch;
 
 #define TRACE printf
@@ -51,44 +51,13 @@ typedef enum {
 } JsCallType;
 
 typedef struct {
+  VmContext *vmContext;
   ErlNifPid pid;
   JsExecType type;
   ErlNifEnv *env;
   int arity;
   ERL_NIF_TERM *terms;
-  void *data;
 } JsExec;
-
-typedef struct {
-  ErlNifEnv *env;
-  ERL_NIF_TERM originTerm;
-  ERL_NIF_TERM scriptTerm;
-} JsRunScript;
-
-typedef struct {
-  ErlNifEnv *env;
-  ERL_NIF_TERM objectTerm;
-  ERL_NIF_TERM fieldsTerm;
-} JsSet;
-
-typedef struct {
-  ErlNifEnv *env;
-  ERL_NIF_TERM objectTerm;
-  ERL_NIF_TERM fieldTerm;
-} JsGet;
-
-typedef struct {
-  ErlNifEnv *env;
-  ERL_NIF_TERM term;
-} JsCallRespond;
-
-typedef struct {
-  ErlNifEnv *env;
-  JsCallType type;
-  ERL_NIF_TERM recv;
-  ERL_NIF_TERM fun;
-  ERL_NIF_TERM args;
-} JsCall;
 
 class Vm {
   public:
@@ -97,11 +66,51 @@ class Vm {
     ERL_NIF_TERM term;
     Isolate *isolate;
     Persistent<Context> context;
+    ErlNifTid tid;
+    ErlNifCond *cond, *cond2;
+    ErlNifMutex *mutex, *mutex2;
+    JsExec *jsExec;
 
     Vm(ErlNifEnv *_env);
     ~Vm();
 
     VmContext *CreateVmContext(ErlNifEnv *env);
+    void Run();
+    void RunLoop();
+    Handle<Value> Poll();
+    JsExec *ResetJsExec();
+
+    void ExecuteRunScript(JsExec *jsExec);
+    void ExecuteSet(JsExec *jsExec);
+    void ExecuteGet(JsExec *jsExec);
+    ERL_NIF_TERM ExecuteCall(VmContext *vmContext,
+        JsCallType type,
+        ErlNifEnv *env,
+        ERL_NIF_TERM recvTerm,
+        ERL_NIF_TERM funTerm,
+        ERL_NIF_TERM argsTerm);
+    void ExecuteCall(JsExec *jsExec);
+    void ExecuteHeapStatistics(JsExec *jsExec);
+    Handle<Value> ExecuteCallRespond(JsExec *jsExec);
+    void Exit(JsExec *jsExec);
+
+    void Stop();
+
+    ERL_NIF_TERM Send(VmContext *vmContext,
+        ErlNifEnv *env,
+        ErlNifPid pid,
+        ERL_NIF_TERM term);
+    ERL_NIF_TERM Send(VmContext *vmContext,
+        ErlNifEnv *returnEnv,
+        JsExecType type,
+        ErlNifPid pid,
+        int arity,
+        const ERL_NIF_TERM *terms);
+
+    void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
+
+    ERL_NIF_TERM MakeError(ErlNifEnv *env, const char *reason);
+    ERL_NIF_TERM MakeError(ErlNifEnv *env, ERL_NIF_TERM reason);
 };
 
 class VmContext {
@@ -111,48 +120,13 @@ class VmContext {
     ErlNifPid server;
     ErlVmContext *erlVmContext;
     ErlNifTid tid;
-    ErlNifCond *cond, *cond2;
-    ErlNifMutex *mutex, *mutex2;
     ERL_NIF_TERM term;
-    JsExec *jsExec;
 
     VmContext(Vm *_vm, ErlNifEnv *env);
     ~VmContext();
 
     void SetServer(ErlNifPid pid);
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
-    bool Run();
-    void Stop();
-    void RunLoop();
-    Handle<Value> Poll();
-
-    ERL_NIF_TERM Send(ErlNifEnv *env,
-        ErlNifPid pid,
-        ERL_NIF_TERM term);
-    ERL_NIF_TERM Send(ErlNifEnv *returnEnv,
-        JsExecType type,
-        ErlNifPid pid,
-        int arity,
-        const ERL_NIF_TERM *terms);
-
-    void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
-    JsExec *ResetJsExec();
-
-    ERL_NIF_TERM MakeError(ErlNifEnv *env, const char *reason);
-    ERL_NIF_TERM MakeError(ErlNifEnv *env, ERL_NIF_TERM reason);
-
-    void ExecuteRunScript(JsExec *jsExec);
-    void ExecuteSet(JsExec *jsExec);
-    void ExecuteGet(JsExec *jsExec);
-    ERL_NIF_TERM ExecuteCall(JsCallType type,
-        ErlNifEnv *env,
-        ERL_NIF_TERM recvTerm,
-        ERL_NIF_TERM funTerm,
-        ERL_NIF_TERM argsTerm);
-    void ExecuteCall(JsExec *jsExec);
-    void ExecuteHeapStatistics(JsExec *jsExec);
-    Handle<Value> ExecuteCallRespond(JsExec *jsExec);
-    void Exit(JsExec *jsExec);
 };
 
 class JsWrapper {
