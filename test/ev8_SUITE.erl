@@ -15,7 +15,8 @@
   multi_fields/1,
   wrapped_fun/1,
   call/1,
-  global/1
+  global/1,
+  multi_context_call/1
   ]).
 
 all() ->
@@ -25,7 +26,8 @@ all() ->
    multi_fields,
    wrapped_fun,
    call,
-   global].
+   global,
+   multi_context_call].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -147,5 +149,22 @@ global(Config) ->
 
   ev8:set(C, global, <<"globalProp">>, 1337),
   1337 = ev8:run_script(C, <<"globalProp">>),
+
+  ok.
+
+multi_context_call(Config)->
+  Vm = ?config(vm, Config),
+  C1 = ?config(context, Config),
+  C2 = ev8:new_context(Vm),
+
+  Obj = ev8:run_script(C1, <<"new String('hello world')">>),
+  Fun = ev8:get(C1, Obj, <<"toString">>),
+  <<"hello world">> = ev8:call(C2, Obj, Fun, []),
+
+  Fun2 = ev8:run_script(C1, <<"var f = function() { return globalVal; }; f">>),
+  ev8:set(C1, global, <<"globalVal">>, 42),
+  ev8:set(C2, global, <<"globalVal">>, -42),
+  42 = ev8:call(C1, Fun2, []),
+  42 = ev8:call(C2, Fun2, []),
 
   ok.

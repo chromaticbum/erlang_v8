@@ -128,25 +128,25 @@ void VmContext::ExecuteRunScript(JsExec *jsExec) {
       ScriptOrigin origin(resourceName, resourceLine);
       free(buffer);
 
-      if(enif_inspect_iolist_as_binary(env, scriptTerm, &binary)) {
+      if(enif_inspect_binary(env, scriptTerm, &binary)) {
         buffer = MakeBuffer(binary);
         Handle<String> source = String::New(buffer);
+        free(buffer);
         Handle<Script> script = Script::Compile(source, &origin);
-        Local<Value> result = script->Run();
+        Local<Value> result;
 
-        if(!result.IsEmpty()) {
-          term = JsWrapper::MakeTerm(this,
+        if(!script.IsEmpty() &&
+            !(result = script->Run()).IsEmpty()) {
+          term = JsWrapper::MakeTerm(vm->isolate,
               env, result);
         } else {
           term = MakeError(env,
               JsWrapper::MakeTerm(env, trycatch));
         }
 
-        free(buffer);
       } else {
         term = MakeError(env, "invalid_script");
       } 
-
     } else {
       term = MakeError(env, "invalid_origin");
     }
@@ -256,7 +256,7 @@ void VmContext::ExecuteGet(JsExec *jsExec) {
           env, fieldTerm);
       Local<Value> fieldValue = obj->Get(fieldHandle);
 
-      term = JsWrapper::MakeTerm(this,
+      term = JsWrapper::MakeTerm(vm->isolate,
           env, fieldValue);
     } else {
       term = MakeError(env, "invalid_object");
@@ -305,12 +305,12 @@ ERL_NIF_TERM VmContext::ExecuteCall(JsCallType type,
         }
 
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
-        term = JsWrapper::MakeTerm(this, env, result);
+        term = JsWrapper::MakeTerm(vm->isolate, env, result);
       } else {
         // Must be CONSTRUCTOR
 
         Local<Value> result = fun->ToObject()->CallAsConstructor(length, args);
-        term = JsWrapper::MakeTerm(this, env, result);
+        term = JsWrapper::MakeTerm(vm->isolate, env, result);
       }
 
       free(args);

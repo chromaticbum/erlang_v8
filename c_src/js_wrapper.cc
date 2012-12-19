@@ -2,21 +2,24 @@
 
 using namespace std;
 
-JsWrapper::JsWrapper(VmContext *_vmContext, ErlNifEnv *env, Persistent<Value> _value) {
-  vmContext = _vmContext;
+JsWrapper::JsWrapper(Isolate *_isolate,
+      ErlNifEnv *env, Persistent<Value> _value) {
+  isolate = _isolate;
   value = _value;
 
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
   resourceTerm = enif_make_resource(env, erlJsWrapper);
   enif_release_resource(erlJsWrapper);
-  enif_keep_resource(vmContext->erlVmContext);
 }
 
 JsWrapper::~JsWrapper() {
-  LHCST(vmContext);
+  Locker locker(isolate);
+  Isolate::Scope iscope(isolate);
+  HandleScope handle_scope;
+  Context::Scope context_scope(Context::New());
+
   value.Dispose();
-  enif_release_resource(vmContext->erlVmContext);
 }
 
 ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
@@ -43,7 +46,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env,
       exceptionTerm, stackTraceTerm);
 }
 
-ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
+ERL_NIF_TERM JsWrapper::MakeTerm(Isolate *isolate,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
@@ -53,9 +56,8 @@ ERL_NIF_TERM JsWrapper::MakeTerm(VmContext *vmContext,
 
       return enif_make_copy(env, erlWrapper->term);
     } else {
-      JsWrapper *jsWrapper = new JsWrapper(vmContext,
-          env,
-          Persistent<Value>::New(value));
+      JsWrapper *jsWrapper = new JsWrapper(isolate,
+          env, Persistent<Value>::New(value));
       return jsWrapper->resourceTerm;
     }
   } else if(value->IsBoolean()) {

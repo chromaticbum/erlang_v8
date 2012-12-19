@@ -50,7 +50,7 @@ get(Context, JsObject, Field) ->
   execute(Context, self(), {get, JsObject, Field}).
 
 call(Context, Fun, Args) ->
-  call(Context, undefined, Fun, Args).
+  call(Context, global, Fun, Args).
 
 call(Context, Recv, Fun, Args) ->
   execute(Context, self(), {call, normal, {Recv, Fun, Args}}).
