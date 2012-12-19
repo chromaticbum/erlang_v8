@@ -50,11 +50,6 @@ typedef enum {
   CONSTRUCTOR
 } JsCallType;
 
-typedef enum {
-  RUNTIME,
-  COMPILER
-} JsErrorType;
-
 typedef struct {
   ErlNifPid pid;
   JsExecType type;
@@ -188,7 +183,6 @@ class JsWrapper {
         ErlNifEnv *env,
         Local<Value> value);
     static ERL_NIF_TERM MakeTerm(ErlNifEnv *env,
-        JsErrorType type,
         TryCatch trycatch);
 };
 

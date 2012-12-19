@@ -31,25 +31,15 @@ ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,
 }
 
 ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env,
-    JsErrorType type,
     TryCatch trycatch) {
   Handle<Value> exception = trycatch.Exception();
   Handle<Value> stackTrace = trycatch.StackTrace();
 
   ERL_NIF_TERM exceptionTerm = MakeBinary(env, exception);
   ERL_NIF_TERM stackTraceTerm = MakeBinary(env, stackTrace);
-  ERL_NIF_TERM typeTerm;
-
-  if(type == RUNTIME) {
-    typeTerm = enif_make_atom(env, "js_runtime_error");
-  } else {
-    // Must be compiler error
-
-    typeTerm = enif_make_atom(env, "js_compiler_error");
-  }
 
   return enif_make_tuple3(env,
-      typeTerm,
+      enif_make_atom(env, "js_error"),
       exceptionTerm, stackTraceTerm);
 }
 

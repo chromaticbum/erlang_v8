@@ -50,14 +50,14 @@ run_script(Config) ->
   <<"hello">> = ev8:run_script(C, <<"'hello'">>),
   <<>> = ev8:run_script(C, <<"new Object()">>),
 
-  {error, {js_compiler_error, _Info, _StackTrace}} = ev8:run_script(C, <<"i.myFun()">>),
+  {error, {js_error, _Info, _StackTrace}} = ev8:run_script(C, <<"i.myFun()">>),
 
   ok.
 
 script_origin(Config) ->
   C = ?config(context, Config),
 
-  {error, {js_compiler_error, _Info, StackTrace}} = ev8:run_script(C, {"my_origin.erl", 120}, <<"iDontExist">>),
+  {error, {js_error, _Info, StackTrace}} = ev8:run_script(C, {"my_origin.erl", 120}, <<"iDontExist">>),
   true = string:str(binary_to_list(StackTrace), "my_origin.erl:120:1") > 0,
 
   ok.

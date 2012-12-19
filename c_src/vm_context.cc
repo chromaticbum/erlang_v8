@@ -138,7 +138,7 @@ void VmContext::ExecuteRunScript(JsExec *jsExec) {
             env, result);
       } else {
         term = MakeError(env,
-            JsWrapper::MakeTerm(env, COMPILER, trycatch));
+            JsWrapper::MakeTerm(env, trycatch));
       }
 
       free(buffer);
