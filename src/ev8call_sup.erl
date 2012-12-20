@@ -1,4 +1,4 @@
--module(v8vm_sup).
+-module(ev8call_sup).
 
 -behaviour(supervisor).
 
@@ -13,21 +13,21 @@
 %%% API functions
 %%%===================================================================
 
-start_child(Context) ->
-  supervisor:start_child(?MODULE, [Context]).
-
 start_link() ->
   supervisor:start_link({local, ?MODULE}, ?MODULE, []).
+
+start_child(Context) ->
+  supervisor:start_child(?MODULE, [Context]).
 
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================
 
 init([]) ->
-  V8VmSpec = {v8vm_srv,
-                   {v8vm_srv, start_link, []},
-                   temporary, 5000, worker, [v8vm_srv]},
-  {ok, {{simple_one_for_one, 5, 10}, [V8VmSpec]}}.
+  Ev8CallSrvSpec = {ev8call_srv,
+                   {ev8call_srv, start_link, []},
+                   temporary, 5000, worker, [ev8call_srv]},
+  {ok, {{simple_one_for_one, 5, 10}, [Ev8CallSrvSpec]}}.
 
 %%%===================================================================
 %%% Internal functions

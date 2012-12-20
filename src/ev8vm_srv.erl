@@ -1,4 +1,4 @@
--module(v8vm_srv).
+-module(ev8vm_srv).
 
 -behaviour(gen_server).
 
@@ -22,7 +22,7 @@
 %%%===================================================================
 
 create(Vm) ->
-  v8vm_sup:start_child(Vm).
+  ev8vm_sup:start_child(Vm).
 
 start_link(Vm) ->
   gen_server:start_link(?MODULE, [Vm], []).
@@ -45,8 +45,8 @@ handle_cast(_Msg, State) ->
 
 handle_info({call, Context, Fun, Args}, State) ->
   io:format("Calle: ~p~n", [Args]),
-  {ok, Pid} = v8call_srv:create(Context),
-  v8call_srv:call(Pid, Fun, Args),
+  {ok, Pid} = ev8call_srv:create(Context),
+  ev8call_srv:call(Pid, Fun, Args),
   {noreply, State};
 handle_info(_Info, State) ->
   {noreply, State}.

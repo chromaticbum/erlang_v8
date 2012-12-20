@@ -1,4 +1,4 @@
--module(v8call_srv).
+-module(ev8call_srv).
 
 -behaviour(gen_server).
 
@@ -29,7 +29,7 @@ start_link(Context) ->
   gen_server:start_link(?MODULE, [Context], []).
 
 create(Context) ->
-  v8call_sup:start_child(Context).
+  ev8call_sup:start_child(Context).
 
 %%%===================================================================
 %%% gen_server callbacks

@@ -21,11 +21,11 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-  V8VmSpec = {v8vm_sup,
-                   {v8vm_sup, start_link, []},
-                   permanent, 5000, supervisor, [v8vm_sup]},
-  V8CallSpec = {v8call_sup,
-                   {v8call_sup, start_link, []},
-                   permanent, 5000, supervisor, [v8call_sup]},
-  {ok, {{one_for_one, 5, 10}, [V8VmSpec, V8CallSpec]}}.
+  Ev8VmSpec = {ev8vm_sup,
+                   {ev8vm_sup, start_link, []},
+                   permanent, 5000, supervisor, [ev8vm_sup]},
+  Ev8CallSpec = {ev8call_sup,
+                   {ev8call_sup, start_link, []},
+                   permanent, 5000, supervisor, [ev8call_sup]},
+  {ok, {{one_for_one, 5, 10}, [Ev8VmSpec, Ev8CallSpec]}}.
 
