@@ -10,7 +10,7 @@
 %% ===================================================================
 
 start(_StartType, _StartArgs) ->
-    erlang_v8_sup:start_link().
+  erlang_v8_sup:start_link().
 
 stop(_State) ->
-    ok.
+  ok.

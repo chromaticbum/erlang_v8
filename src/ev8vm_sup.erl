@@ -24,10 +24,13 @@ create(Vm) ->
 %%%===================================================================
 
 init([Vm]) ->
-  Ev8VmSpec = {ev8vm_srv,
-               {ev8vm_srv, start_link, [Vm]},
-               permanent, 5000, worker, [ev8vm_srv]},
-  {ok, {{one_for_one, 5, 10}, [Ev8VmSpec]}}.
+  Ev8VmSrvSpec = {ev8vm_srv,
+                  {ev8vm_srv, start_link, [Vm]},
+                  permanent, 5000, worker, [ev8vm_srv]},
+  Ev8TxnSrvSpec = {ev8txn_srv,
+                   {ev8txn_srv, start_link, []},
+                   permanent, 5000, worker, [ev8txn_srv]},
+  {ok, {{one_for_all, 5, 10}, [Ev8VmSrvSpec, Ev8TxnSrvSpec]}}.
 
 %%%===================================================================
 %%% Internal functions
