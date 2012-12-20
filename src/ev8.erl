@@ -23,7 +23,7 @@
 -spec new_vm() -> v8nif:vm().
 new_vm() ->
   Vm = v8nif:new_vm(),
-  {ok, _Pid} = ev8vm_srv:create(Vm),
+  {ok, _Pid} = ev8vm_sup:create(Vm),
   Vm.
 
 -spec set_vm_server(v8nif:vm(), pid()) -> ok.

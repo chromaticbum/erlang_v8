@@ -1,10 +1,10 @@
--module(ev8vm_sup).
+-module(ev8_sup).
 
 -behaviour(supervisor).
 
 %% API
--export([start_link/1,
-         create/1]).
+-export([start_link/0,
+        start_child/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -13,22 +13,23 @@
 %%% API functions
 %%%===================================================================
 
-start_link(Vm) ->
-  supervisor:start_link(?MODULE, [Vm]).
+start_link() ->
+  supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-create(Vm) ->
-  ev8_sup:start_child(Vm).
+start_child(Vm) ->
+  supervisor:start_child(?MODULE, [Vm]).
 
 %%%===================================================================
 %%% Supervisor callbacks
 %%%===================================================================
 
-init([Vm]) ->
-  Ev8VmSpec = {ev8vm_srv,
-               {ev8vm_srv, start_link, [Vm]},
-               permanent, 5000, worker, [ev8vm_srv]},
-  {ok, {{one_for_one, 5, 10}, [Ev8VmSpec]}}.
+init([]) ->
+  Ev8VmSupSpec = {ev8vm_sup,
+                  {ev8vm_sup, start_link, []},
+                  permanent, 5000, worker, [ev8vm_sup]},
+  {ok, {{simple_one_for_one, 5, 10}, [Ev8VmSupSpec]}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+

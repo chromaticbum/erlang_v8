@@ -3,8 +3,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/1,
-         create/1]).
+-export([start_link/1]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -20,9 +19,6 @@
 %%%===================================================================
 %%% API
 %%%===================================================================
-
-create(Vm) ->
-  ev8vm_sup:start_child(Vm).
 
 start_link(Vm) ->
   gen_server:start_link(?MODULE, [Vm], []).
