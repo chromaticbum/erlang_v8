@@ -40,24 +40,28 @@ init([Context]) ->
       context = Context}}.
 
 handle_call(_Request, _From, State) ->
-  Reply = ok,
-  {reply, Reply, State}.
+  {stop, normal, {error, badcall}, State}.
 
 handle_cast({call, Fun, Args}, State) ->
   Context = State#state.context,
   ev8:call_respond(Context, Fun, Args),
-  {noreply, State};
-handle_cast(_Msg, State) ->
-  {noreply, State}.
+  {stop, normal, State}.
 
 handle_info(_Info, State) ->
-  {noreply, State}.
+  {stop, normal, State}.
 
 terminate({{badarity, _}, _}, State) ->
   Context = State#state.context,
   v8nif:execute(Context, self(), {call_respond, {error, badarity}}),
   ok;
-terminate(_Reason, _State) ->
+terminate(normal, _State) ->
+  ok;
+terminate(Reason, State) when is_atom(Reason) ->
+  Context = State#state.context,
+  v8nif:execute(Context, self(), {call_respond, {error, Reason}});
+terminate(_Reason, State) ->
+  Context = State#state.context,
+  v8nif:execute(Context, self(), {call_respond, {error, unknown}}),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
