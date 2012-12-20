@@ -44,7 +44,7 @@ handle_call(_Request, _From, State) ->
 
 handle_cast({call, Fun, Args}, State) ->
   Context = State#state.context,
-  ev8:call_respond(Context, Fun, Args),
+  ev8:call_respond(Context, make_call(Fun, Args)),
   {stop, normal, State}.
 
 handle_info(_Info, State) ->
@@ -52,16 +52,17 @@ handle_info(_Info, State) ->
 
 terminate({{badarity, _}, _}, State) ->
   Context = State#state.context,
-  v8nif:execute(Context, self(), {call_respond, {error, badarity}}),
+  ev8:call_respond(Context, {error, badarity}),
   ok;
 terminate(normal, _State) ->
   ok;
 terminate(Reason, State) when is_atom(Reason) ->
   Context = State#state.context,
-  v8nif:execute(Context, self(), {call_respond, {error, Reason}});
+  ev8:call_respond(Context, {error, Reason}),
+  ok;
 terminate(_Reason, State) ->
   Context = State#state.context,
-  v8nif:execute(Context, self(), {call_respond, {error, unknown}}),
+  ev8:call_respond(Context, {error, unknown}),
   ok.
 
 code_change(_OldVsn, State, _Extra) ->
@@ -70,3 +71,8 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+make_call({Module, Fun}, Args) ->
+  apply(Module, Fun, Args);
+make_call(Fun, Args) ->
+  apply(Fun, Args).

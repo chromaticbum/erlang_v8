@@ -1,5 +1,7 @@
 -module(ev8).
 
+-include("erlang_v8.hrl").
+
 -export([
   new_vm/0,
   set_vm_server/2,
@@ -17,7 +19,7 @@
   call/4,
   call_constructor/3,
   heap_statistics/1,
-  call_respond/3
+  call_respond/2
   ]).
 
 -spec new_vm() -> v8nif:vm().
@@ -30,7 +32,7 @@ new_vm() ->
 set_vm_server(Vm, Server) ->
   v8nif:set_vm_server(Vm, Server).
 
--spec new_context(v8nif:vm()) -> v8nif:vm_context().
+-spec new_context(v8nif:vm()) -> v8nif:ev8_context().
 new_context(Vm) ->
   Ctx = v8nif:new_context(Vm),
   Ctx.
@@ -65,20 +67,14 @@ call_constructor(Context, Fun, Args) ->
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).
 
-call_respond(Context, Fun, Args) ->
-  Result = make_call(Fun, Args),
-  io:format("Call Respond: ~p(~p) -> ~p~n", [Fun, Args, Result]),
+call_respond(Context, Result) ->
+  io:format("Call Respond: ~p~p~n", [Context, Result]),
   send_response(Context, Result).
 
 send_response(Context, {error, Reason}) ->
-  v8nif:execute(Context, self(), {call_respond, {error, Reason}});
+  execute(Context, self(), {call_respond, {error, Reason}});
 send_response(Context, Result) ->
-  v8nif:execute(Context, self(), {call_respond, {ok, Result}}).
-
-make_call({Module, Fun}, Args) ->
-  apply(Module, Fun, Args);
-make_call(Fun, Args) ->
-  apply(Fun, Args).
+  execute(Context, self(), {call_respond, {ok, Result}}).
 
 execute(Context, Pid, Command) ->
   v8nif:execute(Context, Pid, Command),

@@ -9,8 +9,6 @@
   execute/3
   ]).
 
--include("erlang_v8.hrl").
-
 -export_type([
     vm/0,
     vm_context/0,
