@@ -15,7 +15,7 @@
     command/0,
     cmd_heap_statistics/0,
     cmd_call_respond/0,
-    cmd_run_script/0,
+    cmd_eval/0,
     cmd_set/0,
     cmd_get/0
     ]).
@@ -38,14 +38,14 @@
 -type field_set() :: {any(), any()}.
 -type cmd_set() :: {set, js_obj(), [field_set()]}.
 
--type cmd_run_script() :: {run_script, {binary(), integer()}, iolist()}.
+-type cmd_eval() :: {eval, {binary(), integer()}, iolist()}.
 
 -type call_response() :: {ok, any()} | {error, any()}.
 -type cmd_call_respond() :: {call_respond, call_response()}.
 
 -type command() :: cmd_heap_statistics() |
   cmd_call() | cmd_get() | cmd_set() |
-  cmd_run_script() | cmd_call_respond().
+  cmd_eval() | cmd_call_respond().
 
 -spec init() -> ok | {error, Reason}
   when Reason :: term().

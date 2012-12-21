@@ -10,8 +10,8 @@
 
 % VM Functions
 -export([
-  run_script/2,
-  run_script/3,
+  eval/2,
+  eval/3,
   set/3,
   set/4,
   get/3,
@@ -42,14 +42,13 @@ new_context(Vm) ->
 transaction(Context, Fun) ->
   ev8txn:transaction(Context, Fun).
 
-run_script(Context, Source) ->
-  run_script(Context, {<<"unknown">>, 0}, Source).
+eval(Context, Source) ->
+  eval(Context, {<<"unknown">>, 0}, Source).
 
-run_script(Context, {File, Line}, Source) when is_list(File) ->
-  run_script(Context, {list_to_binary(File), Line}, Source);
-run_script(Context, {File, Line}, Source) ->
-  io:format("file is: ~p:~p~n", [File, Line]),
-  execute(Context, self(), {run_script, {File, Line}, Source}).
+eval(Context, {File, Line}, Source) when is_list(File) ->
+  eval(Context, {list_to_binary(File), Line}, Source);
+eval(Context, {File, Line}, Source) ->
+  execute(Context, self(), {eval, {File, Line}, Source}).
 
 set(Context, JsObject, FieldList) ->
   execute(Context, self(), {set, JsObject, FieldList}).

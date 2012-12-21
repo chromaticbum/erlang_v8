@@ -86,8 +86,8 @@ Handle<Value> Vm::Poll() {
 
   TRACE("Vm::Poll - 5\n");
   switch(jsExec2->type) {
-    case RUN_SCRIPT:
-      ExecuteRunScript(jsExec2);
+    case EVAL:
+      ExecuteEval(jsExec2);
       break;
     case SET:
       ExecuteSet(jsExec2);
@@ -166,8 +166,8 @@ char *MakeBuffer(ErlNifBinary binary) {
   return buffer;
 }
 
-void Vm::ExecuteRunScript(JsExec *jsExec) {
-  TRACE("Vm::ExecuteRunScript\n");
+void Vm::ExecuteEval(JsExec *jsExec) {
+  TRACE("Vm::ExecuteEval\n");
   LHCST(this, jsExec->vmContext);
 
   ErlNifBinary binary;
@@ -552,9 +552,9 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
     if(enif_get_atom_length(env, command[0], &length, ERL_NIF_LATIN1)) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
-        if(strncmp(buffer, "run_script", length) == 0) {
+        if(strncmp(buffer, "eval", length) == 0) {
           TRACE("Vm::Send - 1\n");
-          result = Send(vmContext, env, RUN_SCRIPT, pid, arity, command);
+          result = Send(vmContext, env, EVAL, pid, arity, command);
         } else if(strncmp(buffer, "call", length) == 0) {
           result = Send(vmContext, env, CALL, pid, arity, command);
         } else if(strncmp(buffer, "call_respond", length) == 0) {

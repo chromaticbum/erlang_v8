@@ -9,7 +9,7 @@
   ]).
 
 -export([
-  run_script/1,
+  eval/1,
   script_origin/1,
   fields/1,
   multi_fields/1,
@@ -20,7 +20,7 @@
   ]).
 
 all() ->
-  [run_script,
+  [eval,
    script_origin,
    fields,
    multi_fields,
@@ -39,27 +39,27 @@ end_per_suite(Config) ->
   erlang_v8:stop(),
   Config.
 
-run_script(Config) ->
+eval(Config) ->
   C = ?config(context, Config),
 
-  undefined = ev8:run_script(C, <<"undefined">>),
-  null = ev8:run_script(C, <<"null">>),
-  22 = ev8:run_script(C, <<"22">>),
-  -22 = ev8:run_script(C, <<"-22">>),
-  22.2 = ev8:run_script(C, <<"22.2">>),
-  true = ev8:run_script(C, <<"true">>),
-  false = ev8:run_script(C, <<"false">>),
-  <<"hello">> = ev8:run_script(C, <<"'hello'">>),
-  <<>> = ev8:run_script(C, <<"new Object()">>),
+  undefined = ev8:eval(C, <<"undefined">>),
+  null = ev8:eval(C, <<"null">>),
+  22 = ev8:eval(C, <<"22">>),
+  -22 = ev8:eval(C, <<"-22">>),
+  22.2 = ev8:eval(C, <<"22.2">>),
+  true = ev8:eval(C, <<"true">>),
+  false = ev8:eval(C, <<"false">>),
+  <<"hello">> = ev8:eval(C, <<"'hello'">>),
+  <<>> = ev8:eval(C, <<"new Object()">>),
 
-  {error, {js_error, _Info, _StackTrace}} = ev8:run_script(C, <<"i.myFun()">>),
+  {error, {js_error, _Info, _StackTrace}} = ev8:eval(C, <<"i.myFun()">>),
 
   ok.
 
 script_origin(Config) ->
   C = ?config(context, Config),
 
-  {error, {js_error, _Info, StackTrace}} = ev8:run_script(C, {"my_origin.erl", 120}, <<"iDontExist">>),
+  {error, {js_error, _Info, StackTrace}} = ev8:eval(C, {"my_origin.erl", 120}, <<"iDontExist">>),
   true = string:str(binary_to_list(StackTrace), "my_origin.erl:120:1") > 0,
 
   ok.
@@ -67,7 +67,7 @@ script_origin(Config) ->
 fields(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:run_script(C, <<"new Object()">>),
+  Obj = ev8:eval(C, <<"new Object()">>),
   ev8:set(C, Obj, <<"erlUndefined">>, undefined),
   ev8:set(C, Obj, <<"erlNull">>, null),
   ev8:set(C, Obj, <<"erlInt">>, 22),
@@ -91,7 +91,7 @@ fields(Config) ->
   {error, invalid_object} = (catch ev8:get(C, 2, <<"heyThere">>)),
   {error, invalid_object} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),
 
-  FieldObj = ev8:run_script(C, <<"new Object">>),
+  FieldObj = ev8:eval(C, <<"new Object">>),
   ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, FieldObj),
 
@@ -100,8 +100,8 @@ fields(Config) ->
 multi_fields(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:run_script(C, <<"new Object">>),
-  FieldObj = ev8:run_script(C, <<"new Object">>),
+  Obj = ev8:eval(C, <<"new Object">>),
+  FieldObj = ev8:eval(C, <<"new Object">>),
 
   ev8:set(C, Obj, [{FieldObj, <<"fieldObj">>},
                    {true, <<"true">>},
@@ -118,17 +118,17 @@ multi_fields(Config) ->
 wrapped_fun(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:run_script(C, <<"var a = new Object(); a">>),
+  Obj = ev8:eval(C, <<"var a = new Object(); a">>),
   ev8:set(C, Obj, <<"erlFun">>, fun(A, B) -> A + B end),
 
-  6 = ev8:run_script(C, <<"a.erlFun(2, 4)">>),
+  6 = ev8:eval(C, <<"a.erlFun(2, 4)">>),
 
   ok.
 
 call(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:run_script(C, <<"new String('hello,world')">>),
+  Obj = ev8:eval(C, <<"new String('hello,world')">>),
   Fun = ev8:get(C, Obj, <<"split">>),
   ev8:set(C, Obj, <<"myFun">>, fun(A, B) -> A + B end),
   Fun2 = ev8:get(C, Obj, <<"myFun">>),
@@ -148,7 +148,7 @@ global(Config) ->
   C = ?config(context, Config),
 
   ev8:set(C, global, <<"globalProp">>, 1337),
-  1337 = ev8:run_script(C, <<"globalProp">>),
+  1337 = ev8:eval(C, <<"globalProp">>),
 
   ok.
 
@@ -157,11 +157,11 @@ multi_context_call(Config)->
   C1 = ?config(context, Config),
   C2 = ev8:new_context(Vm),
 
-  Obj = ev8:run_script(C1, <<"new String('hello world')">>),
+  Obj = ev8:eval(C1, <<"new String('hello world')">>),
   Fun = ev8:get(C1, Obj, <<"toString">>),
   <<"hello world">> = ev8:call(C2, Obj, Fun, []),
 
-  Fun2 = ev8:run_script(C1, <<"var f = function() { return globalVal; }; f">>),
+  Fun2 = ev8:eval(C1, <<"var f = function() { return globalVal; }; f">>),
   ev8:set(C1, global, <<"globalVal">>, 42),
   ev8:set(C2, global, <<"globalVal">>, -42),
   42 = ev8:call(C1, Fun2, []),
@@ -171,7 +171,7 @@ multi_context_call(Config)->
   ev8:set(C3, global, <<"anotherFun">>, fun() -> ev8:call(C2, Fun2, []) end),
   Fun3 = ev8:get(C3, global, <<"anotherFun">>),
   ev8:set(C1, global, <<"multiFun">>, fun() ->
-        [ev8:run_script(C2, <<"'crazy context'">>),
+        [ev8:eval(C2, <<"'crazy context'">>),
          ev8:call(C2, Fun2, []),
          ev8:call(C3, Fun3, [])]
     end),

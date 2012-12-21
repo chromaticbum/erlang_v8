@@ -33,7 +33,7 @@ no_txn(Config) ->
   C1 = ?config(c1, Config),
   C2 = ?config(c2, Config),
 
-  Obj = ev8:run_script(C1, <<"new Object">>),
+  Obj = ev8:eval(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
         timer:sleep(100), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
@@ -68,7 +68,7 @@ with_txn(Config) ->
   C1 = ?config(c1, Config),
   C2 = ?config(c2, Config),
 
-  Obj = ev8:run_script(C1, <<"new Object">>),
+  Obj = ev8:eval(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
         timer:sleep(100), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->

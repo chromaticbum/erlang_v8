@@ -38,7 +38,7 @@ typedef struct {
 
 typedef enum {
   EXIT,
-  RUN_SCRIPT,
+  EVAL,
   CALL,
   CALL_RESPOND,
   SET,
@@ -88,7 +88,7 @@ class Vm {
     Handle<Value> Poll();
     JsExec *ResetJsExec();
 
-    void ExecuteRunScript(JsExec *jsExec);
+    void ExecuteEval(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
     void ExecuteGet(JsExec *jsExec);
     ERL_NIF_TERM ExecuteCall(JsCallType type,
