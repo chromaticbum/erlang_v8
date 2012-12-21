@@ -10,6 +10,8 @@ install(C) ->
       ev8:set(C, global, <<"erlang">>, Obj),
       ev8:set(C, Obj, [{<<"string_to_atom">>, fun string_to_atom/1},
                        {<<"string_to_list">>, fun string_to_list/1},
+                       {<<"atom_to_string">>, fun atom_to_string/1},
+                       {<<"list_to_string">>, fun list_to_string/1},
                        {<<"array_to_list">>, fun array_to_list/1},
                        {<<"array_to_tuple">>, fun array_to_tuple/1},
                        {<<"object_to_proplist">>, fun object_to_proplist/1},
@@ -27,6 +29,13 @@ string_to_atom(String) when is_binary(String) ->
 
 string_to_list(String) when is_binary(String) ->
   {binary_to_list(String)}.
+
+atom_to_string(Atom) when is_atom(Atom) ->
+  io:format("ATOM: ~p~n", [Atom]),
+  list_to_binary(atom_to_list(Atom)).
+
+list_to_string(List) when is_list(List) ->
+  list_to_binary(List).
 
 array_to_list(Arr) when is_list(Arr) ->
   {Arr}.

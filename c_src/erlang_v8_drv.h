@@ -100,7 +100,7 @@ class Vm {
     void ExecuteCall(JsExec *jsExec);
     void ExecuteHeapStatistics(JsExec *jsExec);
     Handle<Value> ExecuteCallRespond(JsExec *jsExec);
-    void Exit(JsExec *jsExec);
+    void ExecuteExit(JsExec *jsExec);
 
     void Stop();
 

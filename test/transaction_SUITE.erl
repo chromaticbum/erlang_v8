@@ -35,9 +35,9 @@ no_txn(Config) ->
 
   Obj = ev8:eval_wrapped(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
-        timer:sleep(100), <<"long">> end),
+        timer:sleep(200), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
-        timer:sleep(50), <<"short">> end),
+        timer:sleep(100), <<"short">> end),
 
   LongFun = ev8:get(C1, Obj, <<"longFun">>),
   ShortFun = ev8:get(C1, Obj, <<"shortFun">>),
@@ -70,9 +70,9 @@ with_txn(Config) ->
 
   Obj = ev8:eval_wrapped(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
-        timer:sleep(100), <<"long">> end),
+        timer:sleep(200), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
-        timer:sleep(50), <<"short">> end),
+        timer:sleep(100), <<"short">> end),
 
   LongFun = ev8:get(C1, Obj, <<"longFun">>),
   ShortFun = ev8:get(C1, Obj, <<"shortFun">>),

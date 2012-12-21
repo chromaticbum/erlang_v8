@@ -26,6 +26,8 @@ Vm::Vm(ErlNifEnv *_env) {
   cond2 = enif_cond_create((char *)"VmCond2");
   mutex2 = enif_mutex_create((char *)"VmMutex2");
 
+  jsExec = NULL;
+
   Run();
 }
 
@@ -33,6 +35,8 @@ Vm::~Vm() {
   Stop();
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
+  enif_cond_destroy(cond2);
+  enif_mutex_destroy(mutex2);
 }
 
 ERL_NIF_TERM Vm::MakeTerm(ErlNifEnv *env) {
@@ -102,7 +106,7 @@ Handle<Value> Vm::Poll() {
       ExecuteHeapStatistics(jsExec2);
       break;
     case EXIT:
-      Exit(jsExec2);
+      ExecuteExit(jsExec2);
       break;
     case CALL_RESPOND:
       v = ExecuteCallRespond(jsExec2);
@@ -246,8 +250,8 @@ ERL_NIF_TERM Vm::MakeError(ErlNifEnv *env, ERL_NIF_TERM reason) {
       reason);
 }
 
-void Vm::Exit(JsExec *jsExec) {
-  TRACE("Vm::Exit\n");
+void Vm::ExecuteExit(JsExec *jsExec) {
+  TRACE("Vm::ExecuteExit\n");
 
   // Dead lock for some reason
   //Locker locker(isolate);

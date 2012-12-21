@@ -29,8 +29,12 @@ end_per_suite(Config) ->
 basic(Config) ->
   C = ?config(context, Config),
 
+  ev8:set(C, global, <<"myList">>, {"godzilla"}),
+
   hello_world = ev8:eval(C, <<"erlang.string_to_atom('hello_world')">>),
   "hello_world" = ev8:eval(C, <<"erlang.string_to_list('hello_world')">>),
+  <<"mothra">> = ev8:eval(C, <<"erlang.atom_to_string(erlang.string_to_atom('mothra'))">>),
+  <<"godzilla">> = ev8:eval(C, <<"erlang.list_to_string(myList)">>),
   [<<"hello">>, <<"world">>] = ev8:eval(C, <<"erlang.array_to_list(['hello', 'world'])">>),
   {<<"hello">>, <<"world">>} = ev8:eval(C, <<"erlang.array_to_tuple(['hello', 'world'])">>),
   [{<<"true">>, <<"hello">>},
