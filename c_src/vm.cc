@@ -172,13 +172,15 @@ void Vm::ExecuteEval(JsExec *jsExec) {
 
   ErlNifBinary binary;
   int arity, line;
+  int wrap;
   const ERL_NIF_TERM *terms;
   ERL_NIF_TERM term;
   ErlNifEnv *env = jsExec->env;
 
-  if(jsExec->arity == 2) {
+  if(jsExec->arity == 3) {
     ERL_NIF_TERM originTerm = jsExec->terms[0];
     ERL_NIF_TERM scriptTerm = jsExec->terms[1];
+    ERL_NIF_TERM wrapTerm = jsExec->terms[2];
 
     if(enif_get_tuple(env, originTerm, &arity, &terms) &&
         arity == 2 &&
@@ -199,8 +201,18 @@ void Vm::ExecuteEval(JsExec *jsExec) {
 
         if(!script.IsEmpty() &&
             !(result = script->Run()).IsEmpty()) {
-          term = JsWrapper::MakeTerm(this,
-              env, result);
+          if(enif_get_int(env, wrapTerm, &wrap)) {
+            if(wrap) {
+              JsWrapper *jsWrapper = new JsWrapper(this,
+                  env, Persistent<Value>::New(result));
+              term = jsWrapper->resourceTerm;
+            } else {
+              term = JsWrapper::MakeTerm(this,
+                  env, result);
+            }
+          } else {
+            term = MakeError(env, "bad_wrap_options");
+          }
         } else {
           term = MakeError(env,
               JsWrapper::MakeTerm(env, trycatch));

@@ -55,6 +55,7 @@ eval(Config) ->
   false = ev8:eval(C, <<"false">>),
   <<"hello">> = ev8:eval(C, <<"'hello'">>),
   <<>> = ev8:eval(C, <<"new Object()">>),
+  <<>> = ev8:eval_wrapped(C, <<"false">>),
 
   {error, {js_error, _Info, _StackTrace}} = ev8:eval(C, <<"i.myFun()">>),
 

@@ -10,6 +10,8 @@
 
 % VM Functions
 -export([
+  eval_wrapped/2,
+  eval_wrapped/3,
   eval/2,
   eval/3,
   set/3,
@@ -43,13 +45,17 @@ new_context(Vm) ->
 transaction(Context, Fun) ->
   ev8txn:transaction(Context, Fun).
 
+eval_wrapped(Context, Source) ->
+  eval_wrapped(Context, {<<"unknown">>, 0}, Source).
+
+eval_wrapped(Context, {File, Line}, Source) ->
+  execute_eval(Context, {File, Line}, Source, 1).
+
 eval(Context, Source) ->
   eval(Context, {<<"unknown">>, 0}, Source).
 
-eval(Context, {File, Line}, Source) when is_list(File) ->
-  eval(Context, {list_to_binary(File), Line}, Source);
 eval(Context, {File, Line}, Source) ->
-  execute(Context, self(), {eval, {File, Line}, Source}).
+  execute_eval(Context, {File, Line}, Source, 0).
 
 set(Context, JsObject, FieldList) ->
   execute(Context, self(), {set, JsObject, FieldList}).
@@ -83,6 +89,11 @@ send_response(Context, {error, Reason}) ->
   execute(Context, self(), {call_respond, {error, Reason}});
 send_response(Context, Result) ->
   execute(Context, self(), {call_respond, {ok, Result}}).
+
+execute_eval(Context, {File, Line}, Source, Wrap) when is_list(File) ->
+  execute_eval(Context, {list_to_binary(File), Line}, Source, Wrap);
+execute_eval(Context, {File, Line}, Source, Wrap) ->
+  execute(Context, self(), {eval, {File, Line}, Source, Wrap}).
 
 execute(Context, Pid, Command) ->
   v8nif:execute(Context, Pid, Command),
