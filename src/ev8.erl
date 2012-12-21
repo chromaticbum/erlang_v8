@@ -83,7 +83,7 @@ heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).
 
 call_respond(Context, Result) ->
-  io:format("Call Respond: ~p~p~n", [Context, Result]),
+  io:format("Call Respond(~p): ~p~p~n", [self(), Context, Result]),
   send_response(Context, Result).
 
 install(Context, Plugins) ->
@@ -103,6 +103,7 @@ execute_eval(Context, {File, Line}, Source, Wrap) ->
   execute(Context, self(), {eval, {File, Line}, Source, Wrap}).
 
 execute(Context, Pid, Command) ->
+  io:format("EXEC(~p): ~p~n", [Pid, Command]),
   v8nif:execute(Context, Pid, Command),
   receive_result().
 

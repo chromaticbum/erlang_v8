@@ -45,6 +45,7 @@ handle_call(_Request, _From, State) ->
 handle_cast({call, Fun, Args}, State) ->
   Context = State#state.context,
   ev8:call_respond(Context, make_call(Fun, Args)),
+
   {stop, normal, State}.
 
 handle_info(_Info, State) ->

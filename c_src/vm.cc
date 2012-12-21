@@ -512,6 +512,8 @@ Handle<Value> Vm::ExecuteCallRespond(JsExec *jsExec) {
     value = ThrowException(Exception::Error(String::New("badarity")));
   }
 
+  PostResult(jsExec->pid, env, enif_make_atom(env, "ok"));
+
   enif_clear_env(env);
   enif_free_env(env);
   free(jsExec->terms);
