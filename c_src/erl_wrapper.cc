@@ -57,6 +57,23 @@ Persistent<External> ErlWrapper::MakeExternal() {
   return external;
 }
 
+Local<Value> ErlWrapper::MakeArray(Vm *vm,
+    ErlNifEnv *env,
+    unsigned length,
+    ERL_NIF_TERM arrTerm) {
+  ERL_NIF_TERM head;
+  Local<Array> arr = Array::New(length);
+
+  int i = 0;
+  while(enif_get_list_cell(env, arrTerm, &head, &arrTerm)) {
+    arr->Set(Integer::New(i), MakeHandle(vm, env, head));
+
+    i++;
+  }
+
+  return arr;
+}
+
 Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     ErlNifEnv *env,
     ERL_NIF_TERM term) {
@@ -120,6 +137,8 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
+  } else if(enif_get_list_length(env, term, &_uint)) {
+    value = MakeArray(vm, env, _uint, term);
   } else if(enif_get_tuple(env, term, &_int, &terms)) {
     TRACE("ErlWrapper::MakeHandle - TUPLE\n");
     ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[0]);

@@ -147,6 +147,9 @@ class JsWrapper {
 
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);
+    static ERL_NIF_TERM MakeList(Vm *vm,
+        ErlNifEnv *env,
+        Local<Array> arr);
     static ERL_NIF_TERM MakeTerm(Vm *vm,
         ErlNifEnv *env,
         Local<Value> value);
@@ -168,4 +171,8 @@ class ErlWrapper {
     static Local<Value> MakeHandle(Vm *vm,
         ErlNifEnv *env,
         ERL_NIF_TERM term);
+    static Local<Value> MakeArray(Vm *vm,
+        ErlNifEnv *env,
+        unsigned length,
+        ERL_NIF_TERM arrTerm);
 };

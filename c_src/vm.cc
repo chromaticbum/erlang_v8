@@ -292,6 +292,7 @@ void Vm::ExecuteSet(JsExec *jsExec) {
         }
 
         term = enif_make_list_from_array(env, result, length);
+        free(result);
       } else {
         term = MakeError(env, "fields_not_list");
       }

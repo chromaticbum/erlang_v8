@@ -48,6 +48,22 @@ ERL_NIF_TERM JsWrapper::MakeTerm(ErlNifEnv *env,
       exceptionTerm, stackTraceTerm);
 }
 
+ERL_NIF_TERM JsWrapper::MakeList(Vm *vm,
+    ErlNifEnv *env,
+    Local<Array> arr) {
+  unsigned length = arr->Length();
+  ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(length * sizeof(ERL_NIF_TERM));
+  ERL_NIF_TERM term;
+
+  for(int i = 0; i < length; i++) {
+    terms[i] = MakeTerm(vm, env, arr->Get(Integer::New(i)));
+  }
+  term = enif_make_list_from_array(env, terms, length);
+  free(terms);
+
+  return term;
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     ErlNifEnv *env,
     Local<Value> value) {
@@ -57,6 +73,8 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
       ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
 
       return enif_make_copy(env, erlWrapper->term);
+    } else if(value->IsArray()) {
+      return MakeList(vm, env, Local<Array>::Cast(value));
     } else {
       JsWrapper *jsWrapper = new JsWrapper(vm,
           env, Persistent<Value>::New(value));

@@ -17,7 +17,8 @@
   wrapped_fun/1,
   call/1,
   global/1,
-  multi_context_call/1
+  multi_context_call/1,
+  arrays/1
   ]).
 
 all() ->
@@ -29,7 +30,8 @@ all() ->
    wrapped_fun,
    call,
    global,
-   multi_context_call].
+   multi_context_call,
+   arrays].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -193,5 +195,13 @@ multi_context_call(Config)->
     end),
   Fun4 = ev8:get(C1, global, <<"multiFun">>),
   [<<"crazy context">>, 42, 42] = ev8:call(C1, Fun4, []),
+
+  ok.
+
+arrays(Config) ->
+  C = ?config(context, Config),
+
+  ev8:set(C, global, <<"myArr">>, [<<"hello">>, true, false, 22]),
+  <<"hello">> = ev8:eval(C, <<"myArr[0]">>),
 
   ok.
