@@ -81,6 +81,7 @@ fields(Config) ->
   ev8:set(C, Obj, <<"erlFalse">>, false),
   ev8:set(C, Obj, <<"erlBinary">>, <<"godzilla strikes">>),
   ev8:set(C, Obj, <<"erlList">>, [<<"hello">>, <<"there">>, [true, false, null, undefined]]),
+  ev8:set(C, Obj, <<"erlWrapped">>, true),
 
   undefined = ev8:get(C, Obj, <<"erlUndefined">>),
   null = ev8:get(C, Obj, <<"erlNull">>),
@@ -91,6 +92,8 @@ fields(Config) ->
   false = ev8:get(C, Obj, <<"erlFalse">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, <<"erlBinary">>),
   [<<"hello">>, <<"there">>, [true, false, null, undefined]] = ev8:get(C, Obj, <<"erlList">>),
+  true = ev8:get(C, Obj, <<"erlWrapped">>),
+  <<>> = ev8:get_wrapped(C, Obj, <<"erlWrapped">>),
 
   {error, invalid_object} = (catch ev8:get(C, 2, <<"heyThere">>)),
   {error, invalid_object} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),

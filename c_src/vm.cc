@@ -318,23 +318,35 @@ void Vm::ExecuteGet(JsExec *jsExec) {
   ErlNifEnv *env = jsExec->env;
   ERL_NIF_TERM term;
 
-  if(jsExec->arity == 2) {
+  if(jsExec->arity == 3) {
     ERL_NIF_TERM objectTerm = jsExec->terms[0];
     ERL_NIF_TERM fieldTerm = jsExec->terms[1];
+    ERL_NIF_TERM wrapTerm = jsExec->terms[2];
+    int wrap;
 
-    Handle<Value> value = ErlWrapper::MakeHandle(this,
-      env, objectTerm);
+    if(enif_get_int(env, wrapTerm, &wrap)) {
+      Handle<Value> value = ErlWrapper::MakeHandle(this,
+        env, objectTerm);
 
-    if(value->IsObject()) {
-      Handle<Object> obj = value->ToObject();
-      Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
-          env, fieldTerm);
-      Local<Value> fieldValue = obj->Get(fieldHandle);
+      if(value->IsObject()) {
+        Handle<Object> obj = value->ToObject();
+        Local<Value> fieldHandle = ErlWrapper::MakeHandle(this,
+            env, fieldTerm);
+        Local<Value> fieldValue = obj->Get(fieldHandle);
 
-      term = JsWrapper::MakeTerm(this,
-          env, fieldValue);
+        if(wrap) {
+          JsWrapper *jsWrapper = new JsWrapper(this,
+              env, Persistent<Value>::New(value));
+          term = jsWrapper->resourceTerm;
+        } else {
+          term = JsWrapper::MakeTerm(this,
+              env, fieldValue);
+        }
+      } else {
+        term = MakeError(env, "invalid_object");
+      }
     } else {
-      term = MakeError(env, "invalid_object");
+      term = MakeError(env, "invalid_wrap_option");
     }
   }
 

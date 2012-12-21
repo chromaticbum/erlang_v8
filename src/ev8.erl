@@ -14,6 +14,7 @@
   eval/3,
   set/3,
   set/4,
+  get_wrapped/3,
   get/3,
   call/3,
   call/4,
@@ -56,8 +57,11 @@ set(Context, JsObject, FieldList) ->
 set(Context, JsObject, Field, Term) ->
   set(Context, JsObject, [{Field, Term}]).
 
+get_wrapped(Context, JsObject, Field) ->
+  execute(Context, self(), {get, JsObject, Field, 1}).
+
 get(Context, JsObject, Field) ->
-  execute(Context, self(), {get, JsObject, Field}).
+  execute(Context, self(), {get, JsObject, Field, 0}).
 
 call(Context, Fun, Args) ->
   call(Context, global, Fun, Args).
