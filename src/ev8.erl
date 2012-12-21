@@ -23,6 +23,7 @@
   call_constructor/3,
   heap_statistics/1,
   call_respond/2,
+  wrap_fun/2,
   transaction/2,
   install/2
   ]).
@@ -85,6 +86,15 @@ heap_statistics(Context) ->
 call_respond(Context, Result) ->
   io:format("Call Respond(~p): ~p~p~n", [self(), Context, Result]),
   send_response(Context, Result).
+
+wrap_fun(JsFun, method) ->
+  fun(Context, Recv, Args) ->
+      ev8:call(Context, Recv, JsFun, Args)
+  end;
+wrap_fun(JsFun, static) ->
+  fun(Context, Args) ->
+      ev8:call(Context, JsFun, Args)
+  end.
 
 install(Context, Plugins) ->
   lists:foreach(fun(Plugin) ->

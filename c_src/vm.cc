@@ -396,10 +396,9 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
         Handle<Object> recv;
         Handle<Value> recvValue = ErlWrapper::MakeHandle(this,
             env, recvTerm);
+        recv = recvValue->ToObject();
 
-        if(recvValue->IsObject()) {
-          recv = recvValue->ToObject();
-        } else {
+        if(recv.IsEmpty()) {
           recv = context->Global();
         }
 

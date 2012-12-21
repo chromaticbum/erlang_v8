@@ -15,6 +15,7 @@
   multi_fields/1,
   set_no_wrap/1,
   wrapped_fun/1,
+  wrap_fun/1,
   call/1,
   global/1,
   multi_context_call/1,
@@ -29,6 +30,7 @@ all() ->
    set_no_wrap,
    multi_fields,
    wrapped_fun,
+   wrap_fun,
    call,
    global,
    multi_context_call,
@@ -147,6 +149,23 @@ wrapped_fun(Config) ->
   ev8:set(C, Obj, <<"erlFun">>, fun(A, B) -> A + B end),
 
   6 = ev8:eval(C, <<"a.erlFun(2, 4)">>),
+
+  ok.
+
+wrap_fun(Config) ->
+  C = ?config(context, Config),
+
+  ev8:eval(C, <<"function myFun(a, b) { return a + b; }">>),
+  Obj = ev8:eval_wrapped(C, <<"new String('hello world')">>),
+  Split = ev8:get(C, Obj, <<"split">>),
+  Fun = ev8:get(C, global, <<"myFun">>),
+
+  Wrapped = ev8:wrap_fun(Fun, static),
+  42 = Wrapped(C, [40, 2]),
+
+  SplitWrapped = ev8:wrap_fun(Split, method),
+  [<<"hello">>, <<"world">>] = SplitWrapped(C, Obj, [<<" ">>]),
+  [<<"hello">>, <<"godzilla">>] = SplitWrapped(C, <<"hello godzilla">>, [<<" ">>]),
 
   ok.
 
