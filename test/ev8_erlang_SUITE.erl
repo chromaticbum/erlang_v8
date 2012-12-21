@@ -35,6 +35,6 @@ basic(Config) ->
   {<<"hello">>, <<"world">>} = ev8:eval(C, <<"erlang.array_to_tuple(['hello', 'world'])">>),
   [{<<"true">>, <<"hello">>},
    {<<"noo">>, false}] = ev8:eval(C, <<"erlang.object_to_proplist({true: 'hello', noo: false})">>),
-  "hello, world" = ev8:eval(C, <<"erlang.apply('string', 'join', [[erlang.string_to_list('hello'), erlang.string_to_list('world')], erlang.string_to_list(', ')])">>),
+  "hello, world" = ev8:eval(C, <<"erlang._apply('string', 'join', [[erlang.string_to_list('hello'), erlang.string_to_list('world')], erlang.string_to_list(', ')])">>),
 
   ok.

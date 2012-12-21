@@ -13,7 +13,9 @@ install(C) ->
                        {<<"array_to_list">>, fun array_to_list/1},
                        {<<"array_to_tuple">>, fun array_to_tuple/1},
                        {<<"object_to_proplist">>, fun object_to_proplist/1},
-                       {<<"apply">>, fun js_apply/3}]),
+                       {<<"_apply">>, fun js_apply/3}]),
+      ErlangJs = filename:absname(filename:join(code:priv_dir(erlang_v8), "js/ev8_erlang.js")),
+      ev8:eval(C, {ErlangJs, 0}, file:read_file(ErlangJs)),
       ok
   end,
   {atomic, ok} = ev8:transaction(C, Fun).
@@ -41,4 +43,4 @@ js_apply(Module, Fun, Args) when is_binary(Fun) ->
   js_apply(Module, list_to_atom(binary_to_list(Fun)), Args);
 js_apply(Module, Fun, Args) ->
   io:format("Call: ~p:~p with ~p~n", [Module, Fun, Args]),
-  apply(Module, Fun, Args).
+  {apply(Module, Fun, Args)}.
