@@ -23,7 +23,8 @@
   call_constructor/3,
   heap_statistics/1,
   call_respond/2,
-  transaction/2
+  transaction/2,
+  install/2
   ]).
 
 -spec new_vm() -> v8nif:vm().
@@ -85,6 +86,12 @@ call_respond(Context, Result) ->
   io:format("Call Respond: ~p~p~n", [Context, Result]),
   send_response(Context, Result).
 
+install(Context, Plugins) ->
+  lists:foreach(fun(Plugin) ->
+        Plugin:install(Context)
+    end, Plugins).
+
+% Internal functions
 send_response(Context, {error, Reason}) ->
   execute(Context, self(), {call_respond, {error, Reason}});
 send_response(Context, Result) ->
