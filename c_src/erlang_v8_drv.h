@@ -147,6 +147,9 @@ class JsWrapper {
 
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);
+    static ERL_NIF_TERM MakeStruct(Vm *vm,
+        ErlNifEnv *env,
+        Local<Object> obj);
     static ERL_NIF_TERM MakeList(Vm *vm,
         ErlNifEnv *env,
         Local<Array> arr);

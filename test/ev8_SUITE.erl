@@ -18,7 +18,8 @@
   call/1,
   global/1,
   multi_context_call/1,
-  arrays/1
+  arrays/1,
+  objects/1
   ]).
 
 all() ->
@@ -31,7 +32,8 @@ all() ->
    call,
    global,
    multi_context_call,
-   arrays].
+   arrays,
+   objects].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -54,8 +56,9 @@ eval(Config) ->
   true = ev8:eval(C, <<"true">>),
   false = ev8:eval(C, <<"false">>),
   <<"hello">> = ev8:eval(C, <<"'hello'">>),
-  <<>> = ev8:eval(C, <<"new Object()">>),
+  {struct, []} = ev8:eval(C, <<"new Object()">>),
   <<>> = ev8:eval_wrapped(C, <<"false">>),
+  <<>> = ev8:eval_wrapped(C, <<"new Object()">>),
 
   {error, {js_error, _Info, _StackTrace}} = ev8:eval(C, <<"i.myFun()">>),
 
@@ -72,7 +75,7 @@ script_origin(Config) ->
 fields(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:eval(C, <<"new Object()">>),
+  Obj = ev8:eval_wrapped(C, <<"new Object()">>),
   ev8:set(C, Obj, <<"erlUndefined">>, undefined),
   ev8:set(C, Obj, <<"erlNull">>, null),
   ev8:set(C, Obj, <<"erlInt">>, 22),
@@ -99,7 +102,7 @@ fields(Config) ->
   {error, invalid_object} = (catch ev8:get(C, 2, <<"heyThere">>)),
   {error, invalid_object} = (catch ev8:set(C, <<"godzilla">>, <<"heyThere">>, <<"dude">>)),
 
-  FieldObj = ev8:eval(C, <<"new Object">>),
+  FieldObj = ev8:eval_wrapped(C, <<"new Object">>),
   ev8:set(C, Obj, FieldObj, <<"godzilla strikes">>),
   <<"godzilla strikes">> = ev8:get(C, Obj, FieldObj),
 
@@ -108,8 +111,8 @@ fields(Config) ->
 multi_fields(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:eval(C, <<"new Object">>),
-  FieldObj = ev8:eval(C, <<"new Object">>),
+  Obj = ev8:eval_wrapped(C, <<"new Object">>),
+  FieldObj = ev8:eval_wrapped(C, <<"new Object">>),
 
   [{ok, <<"fieldObj">>},
    {ok, <<"true">>},
@@ -140,7 +143,7 @@ set_no_wrap(Config) ->
 wrapped_fun(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:eval(C, <<"var a = new Object(); a">>),
+  Obj = ev8:eval_wrapped(C, <<"var a = new Object(); a">>),
   ev8:set(C, Obj, <<"erlFun">>, fun(A, B) -> A + B end),
 
   6 = ev8:eval(C, <<"a.erlFun(2, 4)">>),
@@ -150,14 +153,11 @@ wrapped_fun(Config) ->
 call(Config) ->
   C = ?config(context, Config),
 
-  Obj = ev8:eval(C, <<"new String('hello,world')">>),
-  Fun = ev8:get(C, Obj, <<"split">>),
+  Obj = ev8:eval_wrapped(C, <<"new String('hello,world')">>),
+  Fun = ev8:get_wrapped(C, Obj, <<"split">>),
   ev8:set(C, Obj, <<"myFun">>, fun(A, B) -> A + B end),
-  Fun2 = ev8:get(C, Obj, <<"myFun">>),
-  Arr = ev8:call(C, Obj, Fun, [<<",">>]),
-
-  <<"hello">> = ev8:get(C, Arr, 0),
-  <<"world">> = ev8:get(C, Arr, 1),
+  Fun2 = ev8:get_wrapped(C, Obj, <<"myFun">>),
+  [<<"hello">>, <<"world">>] = ev8:call(C, Obj, Fun, [<<",">>]),
 
   {error, badfun} = ev8:call(C, Fun, Obj, [<<",">>]),
   {error, badargs} = ev8:call(C, Obj, Fun, <<",">>),
@@ -179,7 +179,7 @@ multi_context_call(Config)->
   C1 = ?config(context, Config),
   C2 = ev8:new_context(Vm),
 
-  Obj = ev8:eval(C1, <<"new String('hello world')">>),
+  Obj = ev8:eval_wrapped(C1, <<"new String('hello world')">>),
   Fun = ev8:get(C1, Obj, <<"toString">>),
   <<"hello world">> = ev8:call(C2, Obj, Fun, []),
 
@@ -207,5 +207,17 @@ arrays(Config) ->
 
   ev8:set(C, global, <<"myArr">>, [<<"hello">>, true, false, 22]),
   <<"hello">> = ev8:eval(C, <<"myArr[0]">>),
+
+  ok.
+
+objects(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:eval_wrapped(C, <<"var a = new Object; a">>),
+  ev8:set(C, Obj, [{<<"field1">>, <<"godzilla">>},
+                   {<<"field2">>, <<"mothra">>}]),
+
+  {struct, [{<<"field1">>, <<"godzilla">>},
+            {<<"field2">>, <<"mothra">>}]} = ev8:eval(C, <<"a">>),
 
   ok.

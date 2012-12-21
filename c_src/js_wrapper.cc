@@ -64,10 +64,36 @@ ERL_NIF_TERM JsWrapper::MakeList(Vm *vm,
   return term;
 }
 
+ERL_NIF_TERM JsWrapper::MakeStruct(Vm *vm,
+    ErlNifEnv *env,
+    Local<Object> object) {
+  Local<Array> properties = object->GetOwnPropertyNames();
+  unsigned length = properties->Length();
+  ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(length * sizeof(ERL_NIF_TERM));
+  ERL_NIF_TERM term;
+
+  for(int i = 0; i < length; i++) {
+    Local<Value> field = properties->Get(Integer::New(i));
+    Local<Value> value = object->Get(field);
+    terms[i] = enif_make_tuple2(env,
+        MakeTerm(vm, env, field),
+        MakeTerm(vm, env, value));
+  }
+
+  term = enif_make_list_from_array(env, terms, length);
+  free(terms);
+
+  return enif_make_tuple2(env,
+      enif_make_atom(env, "struct"),
+      term);
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     ErlNifEnv *env,
     Local<Value> value) {
   if(value->IsObject()) {
+    Handle<Object> obj = value->ToObject();
+
     if(value->IsExternal()) {
       Handle<External> external = Handle<External>::Cast(value);
       ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
@@ -75,10 +101,12 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
       return enif_make_copy(env, erlWrapper->term);
     } else if(value->IsArray()) {
       return MakeList(vm, env, Local<Array>::Cast(value));
-    } else {
-      JsWrapper *jsWrapper = new JsWrapper(vm,
-          env, Persistent<Value>::New(value));
+    } else if(obj->IsCallable()) {
+      JsWrapper *jsWrapper = new JsWrapper(vm, env, Persistent<Value>::New(value));
+
       return jsWrapper->resourceTerm;
+    } else {
+      return MakeStruct(vm, env, value->ToObject());
     }
   } else if(value->IsBoolean()) {
     if(value->IsTrue()) {

@@ -348,7 +348,7 @@ void Vm::ExecuteGet(JsExec *jsExec) {
 
         if(wrap) {
           JsWrapper *jsWrapper = new JsWrapper(this,
-              env, Persistent<Value>::New(value));
+              env, Persistent<Value>::New(fieldValue));
           term = jsWrapper->resourceTerm;
         } else {
           term = JsWrapper::MakeTerm(this,
