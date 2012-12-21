@@ -11,7 +11,7 @@ static void *StartRunLoop(void *ptr) {
 
 Vm::Vm(ErlNifEnv *_env) {
   env = _env;
-  
+
   sprintf(id, "Vm:%d", _id++);
 
   isolate = Isolate::New();
@@ -275,7 +275,7 @@ void Vm::ExecuteSet(JsExec *jsExec) {
     unsigned length;
 
     Handle<Value> value = ErlWrapper::MakeHandle(this,
-      env, objectTerm);
+        env, objectTerm);
 
     if(value->IsObject()) {
       Handle<Object> obj = value->ToObject();
@@ -338,7 +338,7 @@ void Vm::ExecuteGet(JsExec *jsExec) {
 
     if(enif_get_int(env, wrapTerm, &wrap)) {
       Handle<Value> value = ErlWrapper::MakeHandle(this,
-        env, objectTerm);
+          env, objectTerm);
 
       if(value->IsObject()) {
         Handle<Object> obj = value->ToObject();
@@ -376,7 +376,7 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
     ERL_NIF_TERM funTerm,
     ERL_NIF_TERM argsTerm) {
   Handle<Value> fun = ErlWrapper::MakeHandle(this,
-          env, funTerm);
+      env, funTerm);
   ERL_NIF_TERM head;
 
   if(fun->IsFunction()) {
@@ -625,7 +625,7 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
   enif_mutex_unlock(mutex);
   TRACE("Vm::Send - 1\n");
   while(jsExec != NULL) {
-  TRACE("Vm::Send - 2\n");
+    TRACE("Vm::Send - 2\n");
     enif_cond_wait(cond2, mutex2);
   }
   TRACE("Vm::Send - 3\n");

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <string>
 #include <stack>
+#include <list>
 
 using namespace v8;
 using namespace std;
@@ -73,7 +74,7 @@ class Vm {
     ErlNifMutex *mutex, *mutex2;
     JsExec *jsExec;
     ErlNifPid server;
-    stack<VmContext *> contextStack;
+    stack<VmContext *, list<VmContext *> > contextStack;
 
     Vm(ErlNifEnv *_env);
     ~Vm();
