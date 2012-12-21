@@ -9,11 +9,13 @@
   ]).
 
 -export([
-  no_txn/1
+  no_txn/1,
+  with_txn/1
   ]).
 
 all() ->
-  [no_txn].
+  [no_txn,
+  with_txn].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -33,9 +35,9 @@ no_txn(Config) ->
 
   Obj = ev8:run_script(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
-        timer:sleep(1000), <<"long">> end),
+        timer:sleep(100), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
-        timer:sleep(300), <<"short">> end),
+        timer:sleep(50), <<"short">> end),
 
   LongFun = ev8:get(C1, Obj, <<"longFun">>),
   ShortFun = ev8:get(C1, Obj, <<"shortFun">>),
@@ -57,6 +59,45 @@ no_txn(Config) ->
 
   ok = receive
     {short, <<"long">>} -> ok;
+    {short, _} -> {error, wrong_return}
+  end,
+
+  ok.
+
+with_txn(Config) ->
+  C1 = ?config(c1, Config),
+  C2 = ?config(c2, Config),
+
+  Obj = ev8:run_script(C1, <<"new Object">>),
+  ev8:set(C1, Obj, <<"longFun">>, fun() ->
+        timer:sleep(100), <<"long">> end),
+  ev8:set(C1, Obj, <<"shortFun">>, fun() ->
+        timer:sleep(50), <<"short">> end),
+
+  LongFun = ev8:get(C1, Obj, <<"longFun">>),
+  ShortFun = ev8:get(C1, Obj, <<"shortFun">>),
+
+  Self = self(),
+  spawn(fun() ->
+        Result = ev8:transaction(C1, fun() ->
+                ev8:call(C1, ShortFun, [])
+            end),
+        Self ! {short, Result}
+    end),
+  spawn(fun() ->
+        Result = ev8:transaction(C2, fun() ->
+                ev8:call(C2, LongFun, [])
+            end),
+        Self ! {long, Result}
+    end),
+
+  ok = receive
+    {long, {atomic, <<"long">>}} -> ok;
+    {long, _} -> {error, wrong_return}
+  end,
+
+  ok = receive
+    {short, {atomic, <<"short">>}} -> ok;
     {short, _} -> {error, wrong_return}
   end,
 

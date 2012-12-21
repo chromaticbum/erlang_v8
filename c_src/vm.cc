@@ -1,6 +1,6 @@
 #include "erlang_v8_drv.h"
 
-static int id = 0;
+static int _id = 0;
 
 static void *StartRunLoop(void *ptr) {
   Vm *vm = (Vm *)ptr;
@@ -11,22 +11,20 @@ static void *StartRunLoop(void *ptr) {
 
 Vm::Vm(ErlNifEnv *_env) {
   env = _env;
+  
+  sprintf(id, "Vm:%d", _id++);
 
   isolate = Isolate::New();
 
   erlVm = (ErlVm *) enif_alloc_resource(VmResource, sizeof(ErlVm));
   erlVm->vm = this;
-  term = enif_make_resource(env, erlVm);
+  term = MakeTerm(env);
   enif_release_resource(erlVm);
 
-  string condName = "Vm.cond" + id++;
-  string mutexName = "Vm.mutex" + id++;
-  string condName2 = "Vm.cond" + id++;
-  string mutexName2 = "Vm.mutex" + id++;
-  cond = enif_cond_create((char *)condName.c_str());
-  mutex = enif_mutex_create((char *)mutexName.c_str());
-  cond2 = enif_cond_create((char *)condName2.c_str());
-  mutex2 = enif_mutex_create((char *)mutexName2.c_str());
+  cond = enif_cond_create((char *)"VmCond1");
+  mutex = enif_mutex_create((char *)"VmMutex1");
+  cond2 = enif_cond_create((char *)"VmCond2");
+  mutex2 = enif_mutex_create((char *)"VmMutex2");
 
   Run();
 }
@@ -35,6 +33,10 @@ Vm::~Vm() {
   Stop();
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
+}
+
+ERL_NIF_TERM Vm::MakeTerm(ErlNifEnv *env) {
+  return enif_make_resource_binary(env, erlVm, id, strlen(id));
 }
 
 void Vm::SetServer(ErlNifPid pid) {

@@ -19,7 +19,8 @@
   call/4,
   call_constructor/3,
   heap_statistics/1,
-  call_respond/2
+  call_respond/2,
+  transaction/2
   ]).
 
 -spec new_vm() -> v8nif:vm().
@@ -35,7 +36,11 @@ set_vm_server(Vm, Server) ->
 -spec new_context(v8nif:vm()) -> v8nif:ev8_context().
 new_context(Vm) ->
   Ctx = v8nif:new_context(Vm),
+  ev8txn:add_context(Vm, Ctx),
   Ctx.
+
+transaction(Context, Fun) ->
+  ev8txn:transaction(Context, Fun).
 
 run_script(Context, Source) ->
   run_script(Context, {<<"unknown">>, 0}, Source).

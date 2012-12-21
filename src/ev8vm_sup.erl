@@ -28,7 +28,7 @@ init([Vm]) ->
                   {ev8vm_srv, start_link, [Vm]},
                   permanent, 5000, worker, [ev8vm_srv]},
   Ev8TxnSrvSpec = {ev8txn_srv,
-                   {ev8txn_srv, start_link, []},
+                   {ev8txn_srv, start_link, [Vm]},
                    permanent, 5000, worker, [ev8txn_srv]},
   {ok, {{one_for_all, 5, 10}, [Ev8VmSrvSpec, Ev8TxnSrvSpec]}}.
 

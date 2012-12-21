@@ -1,12 +1,16 @@
 #include "erlang_v8_drv.h"
 
+static unsigned _id = 0;
+
 VmContext::VmContext(Vm *_vm, ErlNifEnv *env) {
   TRACE("VmContext::VmContext\n");
   vm = _vm;
 
+  sprintf(id, "VmContext:%d", _id++);
+
   erlVmContext = (ErlVmContext *)enif_alloc_resource(VmContextResource, sizeof(ErlVmContext));
   erlVmContext->vmContext = this;
-  term = enif_make_resource(env, erlVmContext);
+  term = MakeTerm(env);
   enif_release_resource(erlVmContext);
   enif_keep_resource(vm->erlVm);
 
@@ -28,5 +32,6 @@ VmContext::~VmContext() {
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
   TRACE("Vm::MakeTerm\n");
-  return enif_make_resource(env, erlVmContext);
+  return enif_make_resource_binary(env, erlVmContext, id, strlen(id));
+  //return enif_make_resource(env, erlVmContext);
 }

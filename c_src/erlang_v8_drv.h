@@ -62,6 +62,7 @@ typedef struct {
 
 class Vm {
   public:
+    char id[128];
     ErlNifEnv *env;
     ErlVm *erlVm;
     ERL_NIF_TERM term;
@@ -77,6 +78,7 @@ class Vm {
     Vm(ErlNifEnv *_env);
     ~Vm();
 
+    ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     void SetServer(ErlNifPid pid);
     VmContext *CurrentContext();
 
@@ -120,6 +122,7 @@ class Vm {
 
 class VmContext {
   public:
+    char id[128];
     Vm *vm;
     Persistent<Context> context;
     ErlVmContext *erlVmContext;
