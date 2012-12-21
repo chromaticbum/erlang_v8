@@ -103,14 +103,17 @@ multi_fields(Config) ->
   Obj = ev8:eval(C, <<"new Object">>),
   FieldObj = ev8:eval(C, <<"new Object">>),
 
-  ev8:set(C, Obj, [{FieldObj, <<"fieldObj">>},
-                   {true, <<"true">>},
-                   {false, <<"false">>},
-                   does_nothing]),
+  [{ok, <<"fieldObj">>},
+   {ok, <<"true">>},
+   {ok, false},
+   {error, bad_field}] = ev8:set(C, Obj, [{FieldObj, <<"fieldObj">>},
+                                          {true, <<"true">>},
+                                          {false, false},
+                                          does_nothing]),
 
   <<"fieldObj">> = ev8:get(C, Obj, FieldObj),
   <<"true">> = ev8:get(C, Obj, true),
-  <<"false">> = ev8:get(C, Obj, false),
+  false = ev8:get(C, Obj, false),
   undefined = ev8:get(C, Obj, does_nothing),
 
   ok.

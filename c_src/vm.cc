@@ -260,6 +260,7 @@ void Vm::ExecuteSet(JsExec *jsExec) {
   if(jsExec->arity == 2) {
     ERL_NIF_TERM objectTerm = jsExec->terms[0];
     ERL_NIF_TERM fieldsTerm = jsExec->terms[1];
+    unsigned length;
 
     Handle<Value> value = ErlWrapper::MakeHandle(this,
       env, objectTerm);
@@ -267,18 +268,33 @@ void Vm::ExecuteSet(JsExec *jsExec) {
     if(value->IsObject()) {
       Handle<Object> obj = value->ToObject();
 
-      while(enif_get_list_cell(env, fieldsTerm, &head, &fieldsTerm)) {
-        if(enif_get_tuple(env, head, &arity, &terms) && arity == 2) {
-          Local<Value> field = ErlWrapper::MakeHandle(this,
-              env, terms[0]);
-          Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
-              env, terms[1]);
+      if(enif_get_list_length(env, fieldsTerm, &length)) {
+        ERL_NIF_TERM *result = (ERL_NIF_TERM *)malloc(length * sizeof(ERL_NIF_TERM));
 
-          obj->Set(field, fieldValue);
+        int i = 0;
+        while(enif_get_list_cell(env, fieldsTerm, &head, &fieldsTerm)) {
+          if(enif_get_tuple(env, head, &arity, &terms) && arity == 2) {
+            Local<Value> field = ErlWrapper::MakeHandle(this,
+                env, terms[0]);
+            Local<Value> fieldValue = ErlWrapper::MakeHandle(this,
+                env, terms[1]);
+
+            obj->Set(field, fieldValue);
+
+            result[i] = enif_make_tuple2(env,
+                enif_make_atom(env, "ok"),
+                JsWrapper::MakeTerm(this, env, fieldValue));
+          } else {
+            result[i] = MakeError(env, "bad_field");
+          }
+
+          i++;
         }
-      }
 
-      term = enif_make_atom(env, "ok");
+        term = enif_make_list_from_array(env, result, length);
+      } else {
+        term = MakeError(env, "fields_not_list");
+      }
     } else {
       term = MakeError(env, "invalid_object");
     }
