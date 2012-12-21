@@ -69,6 +69,7 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
   double _double;
   ErlNifBinary binary;
   ErlJsWrapper *erlJsWrapper;
+  const ERL_NIF_TERM *terms;
 
   Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
@@ -119,6 +120,10 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
+  } else if(enif_get_tuple(env, term, &_int, &terms)) {
+    TRACE("ErlWrapper::MakeHandle - TUPLE\n");
+    ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[0]);
+    value = Local<External>::New(erlWrapper->MakeExternal());
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     value = Local<External>::New(erlWrapper->MakeExternal());

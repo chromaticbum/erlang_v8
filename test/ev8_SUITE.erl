@@ -13,6 +13,7 @@
   script_origin/1,
   fields/1,
   multi_fields/1,
+  set_no_wrap/1,
   wrapped_fun/1,
   call/1,
   global/1,
@@ -23,6 +24,7 @@ all() ->
   [eval,
    script_origin,
    fields,
+   set_no_wrap,
    multi_fields,
    wrapped_fun,
    call,
@@ -115,6 +117,17 @@ multi_fields(Config) ->
   <<"true">> = ev8:get(C, Obj, true),
   false = ev8:get(C, Obj, false),
   undefined = ev8:get(C, Obj, does_nothing),
+
+  ok.
+
+set_no_wrap(Config) ->
+  C = ?config(context, Config),
+
+  Obj = ev8:eval(C, <<"new Object">>),
+
+  [{ok, "hello"},
+   {ok, {"true"}}] = ev8:set(C, Obj, [{<<"something">>, {"hello"}},
+                                      {<<"else">>, {{"true"}}}]),
 
   ok.
 
