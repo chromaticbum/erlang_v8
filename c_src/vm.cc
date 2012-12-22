@@ -378,7 +378,8 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
     ErlNifEnv *env,
     ERL_NIF_TERM recvTerm,
     ERL_NIF_TERM funTerm,
-    ERL_NIF_TERM argsTerm) {
+    ERL_NIF_TERM argsTerm,
+    int wrap) {
   Handle<Value> fun = ErlWrapper::MakeHandle(this,
       env, funTerm);
   ERL_NIF_TERM head;
@@ -407,12 +408,24 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
         }
 
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
-        term = JsWrapper::MakeTerm(this, env, result);
+
+        if(wrap) {
+          JsWrapper *jsWrapper = new JsWrapper(this, env, Persistent<Value>::New(result));
+          term = jsWrapper->resourceTerm;
+        } else {
+          term = JsWrapper::MakeTerm(this, env, result);
+        }
       } else {
         // Must be CONSTRUCTOR
 
         Local<Value> result = fun->ToObject()->CallAsConstructor(length, args);
-        term = JsWrapper::MakeTerm(this, env, result);
+
+        if(wrap) {
+          JsWrapper *jsWrapper = new JsWrapper(this, env, Persistent<Value>::New(result));
+          term = jsWrapper->resourceTerm;
+        } else {
+          term = JsWrapper::MakeTerm(this, env, result);
+        }
       }
 
       free(args);
@@ -430,41 +443,46 @@ void Vm::ExecuteCall(JsExec *jsExec) {
   LHCST(this, jsExec->vmContext);
 
   unsigned length;
-  int arity;
+  int arity, wrap;
   const ERL_NIF_TERM *terms;
   ERL_NIF_TERM term;
   ErlNifEnv *env = jsExec->env;
 
-  if(jsExec->arity == 2) {
+  if(jsExec->arity == 3) {
     ERL_NIF_TERM typeTerm = jsExec->terms[0];
     ERL_NIF_TERM callTerm = jsExec->terms[1];
+    ERL_NIF_TERM wrapTerm = jsExec->terms[2];
 
-    if(enif_get_tuple(env, callTerm, &arity, &terms) &&
-        enif_get_atom_length(env, typeTerm, &length, ERL_NIF_LATIN1)) {
-      char *buffer = (char *)malloc((length + 1) * sizeof(char));
-      enif_get_atom(env, typeTerm, buffer, length + 1, ERL_NIF_LATIN1);
+    if(enif_get_int(env, wrapTerm, &wrap)) {
+      if(enif_get_tuple(env, callTerm, &arity, &terms) &&
+          enif_get_atom_length(env, typeTerm, &length, ERL_NIF_LATIN1)) {
+        char *buffer = (char *)malloc((length + 1) * sizeof(char));
+        enif_get_atom(env, typeTerm, buffer, length + 1, ERL_NIF_LATIN1);
 
-      if(strncmp(buffer, "normal", length) == 0) {
-        if(arity == 3) {
-          term = ExecuteCall(NORMAL,
-              env, terms[0], terms[1], terms[2]);
+        if(strncmp(buffer, "normal", length) == 0) {
+          if(arity == 3) {
+            term = ExecuteCall(NORMAL,
+                env, terms[0], terms[1], terms[2], wrap);
+          } else {
+            term = MakeError(env, "badcallarity");
+          }
+        } else if(strncmp(buffer, "constructor", length) == 0) {
+          if(arity == 2) {
+            term = ExecuteCall(CONSTRUCTOR,
+                env, 0, terms[1], terms[2], wrap);
+          } else {
+            term = MakeError(env, "badcallarity");
+          }
         } else {
-          term = MakeError(env, "badcallarity");
+          term = MakeError(env, "badcalltype");
         }
-      } else if(strncmp(buffer, "constructor", length) == 0) {
-        if(arity == 2) {
-          term = ExecuteCall(CONSTRUCTOR,
-              env, 0, terms[1], terms[2]);
-        } else {
-          term = MakeError(env, "badcallarity");
-        }
+
+        free(buffer);
       } else {
-        term = MakeError(env, "badcalltype");
+        term = MakeError(env, "badcall");
       }
-
-      free(buffer);
     } else {
-      term = MakeError(env, "badcall");
+      term = MakeError(env, "badwrap");
     }
   } else {
     term = MakeError(env, "badarity");

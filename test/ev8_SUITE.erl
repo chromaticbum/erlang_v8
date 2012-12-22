@@ -178,6 +178,8 @@ call(Config) ->
   Fun2 = ev8:get_wrapped(C, Obj, <<"myFun">>),
   [<<"hello">>, <<"world">>] = ev8:call(C, Obj, Fun, [<<",">>]),
 
+  <<>> = ev8:call_wrapped(C, Obj, Fun, [<<",">>]),
+
   {error, badfun} = ev8:call(C, Fun, Obj, [<<",">>]),
   {error, badargs} = ev8:call(C, Obj, Fun, <<",">>),
 

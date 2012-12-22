@@ -96,7 +96,8 @@ class Vm {
         ErlNifEnv *env,
         ERL_NIF_TERM recvTerm,
         ERL_NIF_TERM funTerm,
-        ERL_NIF_TERM argsTerm);
+        ERL_NIF_TERM argsTerm,
+        int wrap);
     void ExecuteCall(JsExec *jsExec);
     void ExecuteHeapStatistics(JsExec *jsExec);
     Handle<Value> ExecuteCallRespond(JsExec *jsExec);

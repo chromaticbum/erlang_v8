@@ -18,8 +18,11 @@
   set/4,
   get_wrapped/3,
   get/3,
+  call_wrapped/3,
+  call_wrapped/4,
   call/3,
   call/4,
+  call_constructor_wrapped/3,
   call_constructor/3,
   heap_statistics/1,
   call_respond/2,
@@ -71,14 +74,23 @@ get_wrapped(Context, JsObject, Field) ->
 get(Context, JsObject, Field) ->
   execute(Context, self(), {get, JsObject, Field, 0}).
 
+call_wrapped(Context, Fun, Args) ->
+  call_wrapped(Context, global, Fun, Args).
+
+call_wrapped(Context, Recv, Fun, Args) ->
+  execute_call(Context, Recv, Fun, Args, 1).
+
 call(Context, Fun, Args) ->
   call(Context, global, Fun, Args).
 
 call(Context, Recv, Fun, Args) ->
-  execute(Context, self(), {call, normal, {Recv, Fun, Args}}).
+  execute_call(Context, Recv, Fun, Args, 0).
+
+call_constructor_wrapped(Context, Fun, Args) ->
+  execute_call_constructor(Context, Fun, Args, 1).
 
 call_constructor(Context, Fun, Args) ->
-  execute(Context, self(), {call, constructor, {Fun, Args}}).
+  execute_call_constructor(Context, Fun, Args, 0).
 
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).
@@ -106,6 +118,12 @@ send_response(Context, {error, Reason}) ->
   execute(Context, self(), {call_respond, {error, Reason}});
 send_response(Context, Result) ->
   execute(Context, self(), {call_respond, {ok, Result}}).
+
+execute_call_constructor(Context, Fun, Args, Wrap) ->
+  execute(Context, self(), {call, constructor, {Fun, Args}, Wrap}).
+
+execute_call(Context, Recv, Fun, Args, Wrap) ->
+  execute(Context, self(), {call, normal, {Recv, Fun, Args}, Wrap}).
 
 execute_eval(Context, {File, Line}, Source, Wrap) when is_list(File) ->
   execute_eval(Context, {list_to_binary(File), Line}, Source, Wrap);
