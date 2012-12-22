@@ -69,6 +69,17 @@ void Vm::RunLoop() {
   Poll();
 }
 
+void Vm::ExecuteCallback(JsExec *jsExec) {
+  Locker locker(isolate);
+  Isolate::Scope iscope(isolate);
+  HandleScope handle_scope;
+  Context::Scope context_scope(Context::New());
+
+  jsExec->callback(jsExec->data);
+
+  free(jsExec);
+}
+
 Handle<Value> Vm::Poll() {
   TRACE("Vm::Poll\n");
 
@@ -114,6 +125,9 @@ Handle<Value> Vm::Poll() {
         contextStack.pop();
       }
       return v;
+    case CALLBACK:
+      ExecuteCallback(jsExec2);
+      break;
     default:
       TRACE("Vm::Poll - Default\n");
   }
@@ -602,6 +616,26 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
 
   TRACE("Vm::Send(arg) - 1\n");
   return enif_make_atom(returnEnv, "ok");
+}
+
+void Vm::Send(Vm *vm, VmCallback callback, void *ptr) {
+  enif_mutex_lock(mutex);
+  enif_mutex_lock(mutex2);
+
+  jsExec = (JsExec *)malloc(sizeof(JsExec));
+  jsExec->type = CALLBACK;
+  jsExec->callback = callback;
+  jsExec->data = ptr;
+
+  enif_cond_broadcast(cond);
+  enif_mutex_unlock(mutex);
+  TRACE("Vm::Send(data) - 1\n");
+  while(jsExec != NULL) {
+    TRACE("Vm::Send(data) - 2\n");
+    enif_cond_wait(cond2, mutex2);
+  }
+  TRACE("Vm::Send(data) - 3\n");
+  enif_mutex_unlock(mutex2);
 }
 
 ERL_NIF_TERM Vm::Send(VmContext *vmContext,

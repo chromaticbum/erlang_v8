@@ -2,6 +2,12 @@
 
 using namespace std;
 
+static void JsWrapperDelete(void *ptr) {
+  JsWrapper *jsWrapper = (JsWrapper *)ptr;
+
+  delete jsWrapper;
+}
+
 JsWrapper::JsWrapper(Vm *_vm,
       ErlNifEnv *env, Persistent<Value> _value) {
   vm = _vm;
@@ -15,13 +21,13 @@ JsWrapper::JsWrapper(Vm *_vm,
 }
 
 JsWrapper::~JsWrapper() {
-  Locker locker(vm->isolate);
-  Isolate::Scope iscope(vm->isolate);
-  HandleScope handle_scope;
-  Context::Scope context_scope(Context::New());
-
   value.Dispose();
+
   enif_release_resource(vm->erlVm);
+}
+
+void JsWrapper::Destroy() {
+  vm->Send(vm, JsWrapperDelete, this);
 }
 
 ERL_NIF_TERM JsWrapper::MakeBinary(ErlNifEnv *env,

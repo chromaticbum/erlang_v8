@@ -6,7 +6,7 @@
 
 install(C) ->
   Fun = fun() ->
-      Obj = ev8:eval_wrapped(C, <<"new Object">>),
+      Obj = ev8:eval(C, <<"new Object">>),
       ev8:set(C, global, <<"erlang">>, Obj),
       ev8:set(C, Obj, [{<<"string_to_atom">>, fun string_to_atom/1},
                        {<<"string_to_list">>, fun string_to_list/1},

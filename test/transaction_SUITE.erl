@@ -33,7 +33,7 @@ no_txn(Config) ->
   C1 = ?config(c1, Config),
   C2 = ?config(c2, Config),
 
-  Obj = ev8:eval_wrapped(C1, <<"new Object">>),
+  Obj = ev8:eval(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
         timer:sleep(200), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
@@ -44,11 +44,11 @@ no_txn(Config) ->
 
   Self = self(),
   spawn(fun() ->
-        Result = ev8:call(C1, ShortFun, []),
+        Result = evo8:call(C1, ShortFun, []),
         Self ! {short, Result}
     end),
   spawn(fun() ->
-        Result = ev8:call(C2, LongFun, []),
+        Result = evo8:call(C2, LongFun, []),
         Self ! {long, Result}
     end),
 
@@ -68,7 +68,7 @@ with_txn(Config) ->
   C1 = ?config(c1, Config),
   C2 = ?config(c2, Config),
 
-  Obj = ev8:eval_wrapped(C1, <<"new Object">>),
+  Obj = ev8:eval(C1, <<"new Object">>),
   ev8:set(C1, Obj, <<"longFun">>, fun() ->
         timer:sleep(200), <<"long">> end),
   ev8:set(C1, Obj, <<"shortFun">>, fun() ->
@@ -80,13 +80,13 @@ with_txn(Config) ->
   Self = self(),
   spawn(fun() ->
         Result = ev8:transaction(C1, fun() ->
-                ev8:call(C1, ShortFun, [])
+                evo8:call(C1, ShortFun, [])
             end),
         Self ! {short, Result}
     end),
   spawn(fun() ->
         Result = ev8:transaction(C2, fun() ->
-                ev8:call(C2, LongFun, [])
+                evo8:call(C2, LongFun, [])
             end),
         Self ! {long, Result}
     end),

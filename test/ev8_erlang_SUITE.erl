@@ -31,14 +31,14 @@ basic(Config) ->
 
   ev8:set(C, global, <<"myList">>, {"godzilla"}),
 
-  hello_world = ev8:eval(C, <<"erlang.string_to_atom('hello_world')">>),
-  "hello_world" = ev8:eval(C, <<"erlang.string_to_list('hello_world')">>),
-  <<"mothra">> = ev8:eval(C, <<"erlang.atom_to_string(erlang.string_to_atom('mothra'))">>),
-  <<"godzilla">> = ev8:eval(C, <<"erlang.list_to_string(myList)">>),
-  [<<"hello">>, <<"world">>] = ev8:eval(C, <<"erlang.array_to_list(['hello', 'world'])">>),
-  {<<"hello">>, <<"world">>} = ev8:eval(C, <<"erlang.array_to_tuple(['hello', 'world'])">>),
+  hello_world = evo8:eval(C, <<"erlang.string_to_atom('hello_world')">>),
+  "hello_world" = evo8:eval(C, <<"erlang.string_to_list('hello_world')">>),
+  <<"mothra">> = evo8:eval(C, <<"erlang.atom_to_string(erlang.string_to_atom('mothra'))">>),
+  <<"godzilla">> = evo8:eval(C, <<"erlang.list_to_string(myList)">>),
+  [<<"hello">>, <<"world">>] = evo8:eval(C, <<"erlang.array_to_list(['hello', 'world'])">>),
+  {<<"hello">>, <<"world">>} = evo8:eval(C, <<"erlang.array_to_tuple(['hello', 'world'])">>),
   [{<<"true">>, <<"hello">>},
-   {<<"noo">>, false}] = ev8:eval(C, <<"erlang.object_to_proplist({true: 'hello', noo: false})">>),
-  "hello, world" = ev8:eval(C, <<"erlang._apply('string', 'join', [[erlang.string_to_list('hello'), erlang.string_to_list('world')], erlang.string_to_list(', ')])">>),
+   {<<"noo">>, false}] = evo8:eval(C, <<"erlang.object_to_proplist({true: 'hello', noo: false})">>),
+  "hello, world" = evo8:eval(C, <<"erlang._apply('string', 'join', [[erlang.string_to_list('hello'), erlang.string_to_list('world')], erlang.string_to_list(', ')])">>),
 
   ok.

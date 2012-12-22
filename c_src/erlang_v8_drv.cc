@@ -66,7 +66,7 @@ static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
   printf("JsWrapperDestroy\n");
   ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
-  delete erlJsWrapper->jsWrapper;
+  erlJsWrapper->jsWrapper->Destroy();
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,

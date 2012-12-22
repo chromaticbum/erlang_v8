@@ -25,6 +25,8 @@ class Vm;
 class VmContext;
 class JsWrapper;
 
+typedef void (*VmCallback)(void *ptr);
+
 typedef struct {
   Vm *vm;
 } ErlVm;
@@ -44,7 +46,8 @@ typedef enum {
   CALL_RESPOND,
   SET,
   GET,
-  HEAP_STATISTICS
+  HEAP_STATISTICS,
+  CALLBACK
 } JsExecType;
 
 typedef enum {
@@ -59,6 +62,8 @@ typedef struct {
   ErlNifEnv *env;
   int arity;
   ERL_NIF_TERM *terms;
+  VmCallback callback;
+  void *data;
 } JsExec;
 
 class Vm {
@@ -89,6 +94,7 @@ class Vm {
     Handle<Value> Poll();
     JsExec *ResetJsExec();
 
+    void ExecuteCallback(JsExec *jsExec);
     void ExecuteEval(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
     void ExecuteGet(JsExec *jsExec);
@@ -115,6 +121,7 @@ class Vm {
         ErlNifPid pid,
         int arity,
         const ERL_NIF_TERM *terms);
+    void Send(Vm *vm, VmCallback callback, void *ptr);
 
     void PostResult(ErlNifPid pid, ErlNifEnv *env, ERL_NIF_TERM term);
 
@@ -146,6 +153,8 @@ class JsWrapper {
     JsWrapper(Vm *_vm,
         ErlNifEnv *env, Persistent<Value> _value);
     ~JsWrapper();
+
+    void Destroy();
 
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);

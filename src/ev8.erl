@@ -10,25 +10,26 @@
 
 % VM Functions
 -export([
-  eval_wrapped/2,
-  eval_wrapped/3,
   eval/2,
   eval/3,
   set/3,
   set/4,
-  get_wrapped/3,
   get/3,
-  call_wrapped/3,
-  call_wrapped/4,
   call/3,
   call/4,
-  call_constructor_wrapped/3,
   call_constructor/3,
   heap_statistics/1,
   call_respond/2,
   wrap_fun/2,
   transaction/2,
   install/2
+  ]).
+
+-export([
+  execute_eval/4,
+  execute_call/5,
+  execute_call_constructor/4,
+  execute/3
   ]).
 
 -spec new_vm() -> v8nif:vm().
@@ -50,17 +51,11 @@ new_context(Vm) ->
 transaction(Context, Fun) ->
   ev8txn:transaction(Context, Fun).
 
-eval_wrapped(Context, Source) ->
-  eval_wrapped(Context, {<<"unknown">>, 0}, Source).
-
-eval_wrapped(Context, {File, Line}, Source) ->
-  execute_eval(Context, {File, Line}, Source, 1).
-
 eval(Context, Source) ->
   eval(Context, {<<"unknown">>, 0}, Source).
 
 eval(Context, {File, Line}, Source) ->
-  execute_eval(Context, {File, Line}, Source, 0).
+  execute_eval(Context, {File, Line}, Source, 1).
 
 set(Context, JsObject, FieldList) ->
   execute(Context, self(), {set, JsObject, FieldList}).
@@ -68,29 +63,17 @@ set(Context, JsObject, FieldList) ->
 set(Context, JsObject, Field, Term) ->
   set(Context, JsObject, [{Field, Term}]).
 
-get_wrapped(Context, JsObject, Field) ->
-  execute(Context, self(), {get, JsObject, Field, 1}).
-
 get(Context, JsObject, Field) ->
-  execute(Context, self(), {get, JsObject, Field, 0}).
-
-call_wrapped(Context, Fun, Args) ->
-  call_wrapped(Context, global, Fun, Args).
-
-call_wrapped(Context, Recv, Fun, Args) ->
-  execute_call(Context, Recv, Fun, Args, 1).
+  execute(Context, self(), {get, JsObject, Field, 1}).
 
 call(Context, Fun, Args) ->
   call(Context, global, Fun, Args).
 
 call(Context, Recv, Fun, Args) ->
-  execute_call(Context, Recv, Fun, Args, 0).
-
-call_constructor_wrapped(Context, Fun, Args) ->
-  execute_call_constructor(Context, Fun, Args, 1).
+  execute_call(Context, Recv, Fun, Args, 1).
 
 call_constructor(Context, Fun, Args) ->
-  execute_call_constructor(Context, Fun, Args, 0).
+  execute_call_constructor(Context, Fun, Args, 1).
 
 heap_statistics(Context) ->
   execute(Context, self(), {heap_statistics}).
