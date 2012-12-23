@@ -48,7 +48,8 @@ typedef enum {
   SET,
   GET,
   HEAP_STATISTICS,
-  CALLBACK
+  CALLBACK,
+  NEW_CONTEXT
 } JsExecType;
 
 typedef enum {
@@ -109,6 +110,7 @@ class Vm {
         int wrap);
     void ExecuteCall(JsExec *jsExec);
     void ExecuteHeapStatistics(JsExec *jsExec);
+    void ExecuteNewContext(JsExec *jsExec);
     Handle<Value> ExecuteCallRespond(JsExec *jsExec);
     void ExecuteExit(JsExec *jsExec);
 

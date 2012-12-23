@@ -46,7 +46,8 @@ set_vm_server(Vm, Server) ->
 
 -spec new_context(v8nif:vm()) -> v8nif:ev8_context().
 new_context(Vm) ->
-  Ctx = v8nif:new_context(Vm),
+  v8nif:vm_execute(Vm, self(), {new_context}),
+  Ctx = receive_result(),
   ev8txn:add_context(Vm, Ctx),
   Ctx.
 

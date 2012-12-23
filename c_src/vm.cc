@@ -143,6 +143,9 @@ Handle<Value> Vm::Poll() {
     case CALLBACK:
       ExecuteCallback(jsExec2);
       break;
+    case NEW_CONTEXT:
+      ExecuteNewContext(jsExec2);
+      break;
     default:
       TRACE("Vm::Poll - Default\n");
   }
@@ -347,6 +350,25 @@ void Vm::ExecuteSet(JsExec *jsExec) {
   } else {
     term = MakeError(env, "badarity");
   }
+
+  PostResult(jsExec->pid, env, term);
+
+  enif_clear_env(env);
+  enif_free_env(env);
+  free(jsExec->terms);
+  free(jsExec);
+}
+
+void Vm::ExecuteNewContext(JsExec *jsExec) {
+  TRACE("Vm::ExecuteNewContext\n");
+  Locker locker(isolate);
+  Isolate::Scope iscope(isolate);
+  HandleScope handle_scope;
+
+  ErlNifEnv *env = jsExec->env;
+
+  VmContext *vmContext = new VmContext(this, env);
+  ERL_NIF_TERM term = vmContext->term;
 
   PostResult(jsExec->pid, env, term);
 
@@ -679,6 +701,8 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
           result = Send(vmContext, env, GET, pid, arity, command);
         } else if(strncmp(buffer, "heap_statistics", length) == 0) {
           result = Send(vmContext, env, HEAP_STATISTICS, pid, arity, command);
+        } else if(strncmp(buffer, "new_context", length) == 0) {
+          result = Send(vmContext, env, NEW_CONTEXT, pid, arity, command);
         } else {
           result = enif_make_badarg(env);
         }

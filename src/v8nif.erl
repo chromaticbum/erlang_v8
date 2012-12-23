@@ -5,8 +5,8 @@
   init/0,
   new_vm/0,
   set_vm_server/2,
-  new_context/1,
-  execute/3
+  execute/3,
+  vm_execute/3
   ]).
 
 -export_type([
@@ -64,11 +64,11 @@ new_vm() ->
 set_vm_server(_Vm, _Server) ->
   erlang:nif_error(not_loaded).
 
--spec new_context(vm()) -> vm_context().
-new_context(_Vm) ->
-  erlang:nif_error(not_loaded).
-
 -spec execute(vm_context(), pid(), command()) -> Result
   when Result :: any().
 execute(_Ctx, _Pid, _Command) ->
   erlang:nif_error(not_loaded).
+
+-spec vm_execute(vm(), pid(), any()) -> ok.
+vm_execute(_Ctx, _Pid, _Command) ->
+  elrang:nif_error(not_loaded).

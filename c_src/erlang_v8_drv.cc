@@ -20,20 +20,6 @@ static void VmDestroy(ErlNifEnv *env, void *obj) {
   delete erlVm->vm;
 }
 
-static ERL_NIF_TERM NewContext(ErlNifEnv *env,
-    int argc,
-    const ERL_NIF_TERM argv[]) {
-  ErlVm *erlVm;
-
-  if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
-    Vm *vm = erlVm->vm;
-
-    return vm->CreateVmContext(env)->term;
-  } else {
-    return enif_make_badarg(env);
-  }
-}
-
 static ERL_NIF_TERM SetVmServer(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
@@ -67,6 +53,25 @@ static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
   ErlJsWrapper *erlJsWrapper = (ErlJsWrapper *)obj;
 
   erlJsWrapper->jsWrapper->Destroy();
+}
+
+static ERL_NIF_TERM VmExecute(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlVm *erlVm;
+
+  if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
+    Vm *vm = erlVm->vm;
+    ErlNifPid pid;
+
+    if(enif_get_local_pid(env, argv[1], &pid)) {
+      return vm->Send(NULL, env, pid, argv[2]);
+    } else {
+      return enif_make_badarg(env);
+    }
+  } else {
+    return enif_make_badarg(env);
+  }
 }
 
 static ERL_NIF_TERM Execute(ErlNifEnv *env,
@@ -103,8 +108,8 @@ static int Load(ErlNifEnv *env, void** priv_data, ERL_NIF_TERM load_info) {
 static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
   {"set_vm_server", 2, SetVmServer},
-  {"new_context", 1, NewContext},
-  {"execute", 3, Execute}
+  {"execute", 3, Execute},
+  {"vm_execute", 3, VmExecute}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)
