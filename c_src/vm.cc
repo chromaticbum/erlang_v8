@@ -53,12 +53,6 @@ void Vm::SetServer(ErlNifPid pid) {
   server = pid; 
 }
 
-void Vm::SetVars() {
-  TRACE("Vm::SetVars\n");
-  Context::GetCurrent()->Global()->Set(String::New("__vm__"),
-      MakeExternal());
-}
-
 Local<Value> Vm::MakeExternal() {
   ErlNifEnv *env = enif_alloc_env();
   ErlWrapper *erlWrapper = new ErlWrapper(this, MakeTerm(env));
