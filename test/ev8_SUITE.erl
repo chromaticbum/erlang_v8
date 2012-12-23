@@ -21,7 +21,8 @@
   global/1,
   multi_context_call/1,
   arrays/1,
-  objects/1
+  objects/1,
+  ev8__/1
   ]).
 
 all() ->
@@ -37,7 +38,8 @@ all() ->
    global,
    multi_context_call,
    arrays,
-   objects].
+   objects,
+   ev8__].
 
 init_per_suite(Config) ->
   erlang_v8:start(),
@@ -254,5 +256,19 @@ objects(Config) ->
 
   {struct, [{<<"field1">>, <<"godzilla">>},
             {<<"field2">>, <<"mothra">>}]} = evo8:eval(C, <<"a">>),
+
+  ok.
+
+ev8__(Config) ->
+  Vm = ?config(vm, Config),
+  C = ?config(context, Config),
+
+  Vm = evo8:eval(C, <<"__ev8__.vm">>),
+  C = evo8:eval(C, <<"__ev8__.context">>),
+  <<"js/test.erl">> = evo8:eval(C, {"js/test.erl", 0}, <<"__ev8__.script_name">>),
+  ev8:set(C, global, <<"scriptFun">>, fun()->
+        evo8:eval(C, {"js/another.erl", 0}, <<"__ev8__.script_name">>)
+    end),
+  <<"js/another.erl">> = evo8:eval(C, {"js/test.erl", 0}, <<"scriptFun()">>),
 
   ok.
