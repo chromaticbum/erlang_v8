@@ -12,10 +12,10 @@ Persistent<ObjectTemplate> GlobalFactory::Generate(Vm *vm,
   Context::Scope scope(Context::New());
 
   Local<ObjectTemplate> global = ObjectTemplate::New();
-  Local<Object> erlang = Object::New();
+  Local<Object> erlangV8 = Object::New();
 
-  global->Set(String::New("erlang"), erlang);
-  erlang->Set(String::New("vm"), ErlWrapper::MakeHandle(vm, env, vm->term));
+  global->Set(String::New("erlang_v8"), erlangV8);
+  erlangV8->Set(String::New("vm"), ErlWrapper::MakeHandle(vm, env, vm->term));
 
   return Persistent<ObjectTemplate>::New(global);
 }
