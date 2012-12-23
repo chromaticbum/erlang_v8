@@ -56,6 +56,9 @@ eval_file(Config) ->
             {<<"a">>, <<"file">>}]} = evo8:eval_file(C, filename:join(code:lib_dir(erlang_v8), "test/ev8/eval_file.js")),
   <<>> = ev8:eval_file(C, filename:join(code:lib_dir(erlang_v8), "test/ev8/eval_file.js")),
 
+  {error, {js_error, _, StackTrace}} = evo8:eval_file(C, filename:join(code:lib_dir(erlang_v8), "test/ev8/throw_error.js")),
+  true = string:str(binary_to_list(StackTrace), "throw_error.js:0:7") > 0,
+
    ok.
 
 eval(Config) ->

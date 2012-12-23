@@ -122,6 +122,7 @@ execute_call(Context, Recv, Fun, Args, Wrap) ->
   execute(Context, self(), {call, normal, {Recv, Fun, Args}, Wrap}).
 
 execute_eval(Context, {File, Line}, Source, Wrap) when is_list(File) ->
+  io:format("Origin: ~p~n", [File]),
   execute_eval(Context, {list_to_binary(File), Line}, Source, Wrap);
 execute_eval(Context, {File, Line}, Source, Wrap) ->
   execute(Context, self(), {eval, {File, Line}, Source, Wrap}).
