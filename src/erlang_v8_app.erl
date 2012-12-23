@@ -11,6 +11,7 @@
 
 start(_StartType, _StartArgs) ->
   ev8txn:start(),
+  ev8cache:start(),
   erlang_v8_sup:start_link().
 
 stop(_State) ->
