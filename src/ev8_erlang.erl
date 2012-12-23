@@ -17,7 +17,7 @@ install(C) ->
                        {<<"object_to_proplist">>, fun object_to_proplist/1},
                        {<<"_apply">>, fun js_apply/3}]),
       ErlangJs = filename:absname(filename:join(code:priv_dir(erlang_v8), "js/ev8_erlang.js")),
-      ev8:eval(C, {ErlangJs, 0}, file:read_file(ErlangJs)),
+      ev8:eval_file(C, ErlangJs),
       ok
   end,
   {atomic, ok} = ev8:transaction(C, Fun).
@@ -31,7 +31,6 @@ string_to_list(String) when is_binary(String) ->
   {binary_to_list(String)}.
 
 atom_to_string(Atom) when is_atom(Atom) ->
-  io:format("ATOM: ~p~n", [Atom]),
   list_to_binary(atom_to_list(Atom)).
 
 list_to_string(List) when is_list(List) ->
