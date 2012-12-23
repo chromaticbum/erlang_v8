@@ -10,6 +10,7 @@ static void *StartRunLoop(void *ptr) {
 }
 
 Vm::Vm(ErlNifEnv *_env) {
+  TRACE("Vm::Vm\n");
   env = _env;
 
   sprintf(id, "Vm:%d", _id++);
@@ -20,6 +21,9 @@ Vm::Vm(ErlNifEnv *_env) {
   erlVm->vm = this;
   term = MakeTerm(env);
   enif_release_resource(erlVm);
+
+  TRACE("Vm::Vm - 1\n");
+  global = GlobalFactory::Generate(this, env);
 
   cond = enif_cond_create((char *)"VmCond1");
   mutex = enif_mutex_create((char *)"VmMutex1");
@@ -33,6 +37,8 @@ Vm::Vm(ErlNifEnv *_env) {
 
 Vm::~Vm() {
   Stop();
+  // TODO get this working, eh?
+  //global.Dispose();
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
   enif_cond_destroy(cond2);
@@ -455,7 +461,7 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
         recv = recvValue->ToObject();
 
         if(recv.IsEmpty()) {
-          recv = context->Global();
+          recv = Context::GetCurrent()->Global();
         }
 
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);

@@ -68,6 +68,12 @@ typedef struct {
   void *data;
 } JsExec;
 
+class GlobalFactory {
+  public:
+    static Persistent<ObjectTemplate> Generate(Vm *vm,
+        ErlNifEnv *env);
+};
+
 class Vm {
   public:
     char id[128];
@@ -75,7 +81,7 @@ class Vm {
     ErlVm *erlVm;
     ERL_NIF_TERM term;
     Isolate *isolate;
-    Persistent<Context> context;
+    Persistent<ObjectTemplate> global;
     ErlNifTid tid;
     ErlNifCond *cond, *cond2;
     ErlNifMutex *mutex, *mutex2;

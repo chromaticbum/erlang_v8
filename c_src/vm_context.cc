@@ -17,7 +17,7 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *env) {
   Locker locker(vm->isolate);
   Isolate::Scope iscope(vm->isolate);
   HandleScope handle_scope;
-  context = Persistent<Context>::New(Context::New());
+  context = Persistent<Context>::New(Context::New(NULL, vm->global));
 }
 
 VmContext::~VmContext() {
