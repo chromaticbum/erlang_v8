@@ -33,5 +33,4 @@ VmContext::~VmContext() {
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
   TRACE("Vm::MakeTerm\n");
   return enif_make_resource_binary(env, erlVmContext, id, strlen(id));
-  //return enif_make_resource(env, erlVmContext);
 }

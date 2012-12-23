@@ -19,6 +19,7 @@ static Handle<Value> WrapFun(const Arguments &args) {
   ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
 
   for(int i = 0; i < length; i++) {
+    TRACE("WrapFun - 1\n");
     terms[i] = JsWrapper::MakeTerm(erlWrapper->vm, env, args[i]);
   }
 
