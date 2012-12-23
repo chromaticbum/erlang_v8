@@ -47,6 +47,15 @@ void Vm::SetServer(ErlNifPid pid) {
   server = pid; 
 }
 
+void Vm::SetVars() {
+  Context::GetCurrent()->Global()->Set(String::New("__vm__"),
+      MakeExternal());
+}
+
+Local<Value> Vm::MakeExternal() {
+  return External::New(this);
+}
+
 VmContext *Vm::CurrentContext() {
   return contextStack.top();
 }

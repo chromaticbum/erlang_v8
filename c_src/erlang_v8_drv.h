@@ -13,7 +13,8 @@ using namespace std;
   Isolate::Scope iscop(vm->isolate); \
   HandleScope handle_scope; \
   Context::Scope context_scope(vmContext->context); \
-  TryCatch trycatch;
+  TryCatch trycatch; \
+  vm->SetVars();
 
 #define TRACE printf
 
@@ -87,6 +88,8 @@ class Vm {
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     void SetServer(ErlNifPid pid);
     VmContext *CurrentContext();
+    void SetVars();
+    Local<Value> MakeExternal();
 
     VmContext *CreateVmContext(ErlNifEnv *env);
     void Run();
