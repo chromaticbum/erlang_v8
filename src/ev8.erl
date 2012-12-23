@@ -10,6 +10,7 @@
 
 % VM Functions
 -export([
+  eval_file/2,
   eval/2,
   eval/3,
   set/3,
@@ -29,6 +30,7 @@
   execute_eval/4,
   execute_call/5,
   execute_call_constructor/4,
+  execute_eval_file/3,
   execute/3
   ]).
 
@@ -50,6 +52,9 @@ new_context(Vm) ->
 
 transaction(Context, Fun) ->
   ev8txn:transaction(Context, Fun).
+
+eval_file(Context, File) ->
+  execute_eval_file(Context, File, 1).
 
 eval(Context, Source) ->
   eval(Context, {<<"unknown">>, 0}, Source).
@@ -101,6 +106,14 @@ send_response(Context, {error, Reason}) ->
   execute(Context, self(), {call_respond, {error, Reason}});
 send_response(Context, Result) ->
   execute(Context, self(), {call_respond, {ok, Result}}).
+
+execute_eval_file(Context, File, Wrap) ->
+  execute_eval_file(Context, File, file:read_file(File), Wrap).
+
+execute_eval_file(Context, File, {ok, Source}, Wrap) ->
+  execute_eval(Context, {File, 0}, Source, Wrap);
+execute_eval_file(_Context, _File, {error, Reason}, _Wrap) ->
+  {error, Reason}.
 
 execute_call_constructor(Context, Fun, Args, Wrap) ->
   execute(Context, self(), {call, constructor, {Fun, Args}, Wrap}).

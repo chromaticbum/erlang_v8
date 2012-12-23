@@ -9,6 +9,7 @@
   ]).
 
 -export([
+  eval_file/1,
   eval/1,
   script_origin/1,
   fields/1,
@@ -24,7 +25,8 @@
   ]).
 
 all() ->
-  [eval,
+  [eval_file,
+   eval,
    script_origin,
    fields,
    set_no_wrap,
@@ -46,6 +48,15 @@ init_per_suite(Config) ->
 end_per_suite(Config) ->
   erlang_v8:stop(),
   Config.
+
+eval_file(Config) ->
+  C = ?config(context, Config),
+
+  {struct, [{<<"that">>, <<"is">>},
+            {<<"a">>, <<"file">>}]} = evo8:eval_file(C, filename:join(code:lib_dir(erlang_v8), "test/ev8/eval_file.js")),
+  <<>> = ev8:eval_file(C, filename:join(code:lib_dir(erlang_v8), "test/ev8/eval_file.js")),
+
+   ok.
 
 eval(Config) ->
   C = ?config(context, Config),

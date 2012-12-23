@@ -1,6 +1,7 @@
 -module(evo8).
 
 -export([
+  eval_file/2,
   eval/2,
   eval/3,
   get/3,
@@ -8,6 +9,9 @@
   call/4,
   call_constructor/3,
   wrap_fun/2]).
+
+eval_file(Context, File) ->
+  ev8:execute_eval_file(Context, File, 0).
 
 eval(Context, Source) ->
   eval(Context, {<<"unknown">>, 0}, Source).
