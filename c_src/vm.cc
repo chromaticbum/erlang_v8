@@ -66,6 +66,10 @@ VmContext *Vm::CurrentContext() {
   return contextStack.top();
 }
 
+ScriptOrigin Vm::CurrentScriptOrigin() {
+  return scriptOriginStack.top();
+}
+
 VmContext *Vm::CreateVmContext(ErlNifEnv *env) {
   return new VmContext(this, env);
 }
@@ -226,6 +230,7 @@ void Vm::ExecuteEval(JsExec *jsExec) {
       Handle<String> resourceName = String::New(buffer);
       Handle<Integer> resourceLine = Integer::New(line - 1);
       ScriptOrigin origin(resourceName, resourceLine);
+      scriptOriginStack.push(origin);
       free(buffer);
 
       if(enif_inspect_binary(env, scriptTerm, &binary)) {
@@ -253,10 +258,11 @@ void Vm::ExecuteEval(JsExec *jsExec) {
           term = MakeError(env,
               JsWrapper::MakeTerm(env, trycatch));
         }
-
       } else {
         term = MakeError(env, "invalid_script");
       } 
+
+      scriptOriginStack.pop();
     } else {
       term = MakeError(env, "invalid_origin");
     }

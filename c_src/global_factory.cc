@@ -22,6 +22,14 @@ static Handle<Value> GetScriptName(Local<String> property,
     ->GetFrame(0)->GetScriptName();
 }
 
+static Handle<Value> GetCurrentScriptName(Local<String> property,
+    const AccessorInfo &info) {
+  Handle<External> external = Handle<External>::Cast(info.Data());
+  Vm *vm = (Vm *)external->Value();
+
+  return vm->CurrentScriptOrigin().ResourceName();
+}
+
 Persistent<ObjectTemplate> GlobalFactory::Generate(Vm *vm,
     ErlNifEnv *env) {
   TRACE("GlobalFactory::Generate\n");
@@ -42,6 +50,8 @@ Persistent<ObjectTemplate> GlobalFactory::Generate(Vm *vm,
   erlangV8->SetAccessor(String::New("context"), GetContext,
       NULL, external);
   erlangV8->SetAccessor(String::New("script_name"), GetScriptName);
+  erlangV8->SetAccessor(String::New("current_script_name"), GetCurrentScriptName,
+      NULL, External::New(vm));
 
   return Persistent<ObjectTemplate>::New(global);
 }

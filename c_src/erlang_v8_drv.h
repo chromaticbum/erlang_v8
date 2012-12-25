@@ -87,6 +87,7 @@ class Vm {
     JsExec *jsExec;
     ErlNifPid server;
     stack<VmContext *, list<VmContext *> > contextStack;
+    stack<ScriptOrigin, list<ScriptOrigin> > scriptOriginStack;
 
     Vm(ErlNifEnv *_env);
     ~Vm();
@@ -94,6 +95,7 @@ class Vm {
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     void SetServer(ErlNifPid pid);
     VmContext *CurrentContext();
+    ScriptOrigin CurrentScriptOrigin();
     Local<Value> MakeExternal();
 
     VmContext *CreateVmContext(ErlNifEnv *env);
