@@ -2,7 +2,9 @@
 
 -export([
   start/0,
-  eval_file/2
+  eval_file/2,
+  insert/3,
+  lookup/2
   ]).
 
 start() ->
@@ -11,33 +13,28 @@ start() ->
 eval_file(Context, File) ->
   eval_file(ev8txn:vm(Context), Context, File).
 
+eval_file({error, not_found}, _Context, _File) ->
+  {error, badcontext};
 eval_file({ok, Vm}, Context, File) ->
-  try_cache(Vm, Context, File);
-eval_file({error, Reason}, _Context, _File) -> {error, Reason}.
-
-% Internal functions
+  try_cache(Vm, Context, File).
 
 try_cache(Vm, Context, File) ->
-  case lookup(Vm, File) of
-    {ok, Result} -> Result;
-    {error, not_found} -> cache_miss(Vm, Context, File)
-  end.
+  try_cache(lookup(Vm, {eval_file, File}), Vm, Context, File).
 
-cache_miss(Vm, Context, File) ->
-  case ev8:eval_file(Context, File) of
-    {error, Reason} -> {error, Reason};
-    Result ->
-      insert(Vm, File, Result),
-      Result
-  end.
+try_cache({ok, Result}, _Vm, _Context, _File) ->
+  Result;
+try_cache(cache_miss, Vm, Context, File) ->
+  Result = ev8:eval_file(Context, File),
+  insert(Vm, {eval_file, File}, Result),
+  Result.
 
-insert(Vm, File, Result) ->
-  ets:insert(ev8cache_lookup, {{Vm, File}, Result}).
+insert(Vm, Key, Result) ->
+  ets:insert(ev8cache_lookup, {{Vm, Key}, Result}).
 
-lookup(Vm, File) ->
-  lookup(ets:lookup(ev8cache_lookup, {Vm, File})).
+lookup(Vm, Key) ->
+  lookup(ets:lookup(ev8cache_lookup, {Vm, Key})).
 
-lookup([{{_Vm, _File}, Result}]) ->
+lookup([{{_, _}, Result}]) ->
   {ok, Result};
 lookup([]) ->
-  {error, not_found}.
+  cache_miss.
