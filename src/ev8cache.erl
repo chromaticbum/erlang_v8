@@ -3,6 +3,7 @@
 -export([
   start/0,
   eval_file/2,
+  try_cache/3,
   insert/3,
   lookup/2
   ]).
@@ -16,16 +17,20 @@ eval_file(Context, File) ->
 eval_file({error, not_found}, _Context, _File) ->
   {error, badcontext};
 eval_file({ok, Vm}, Context, File) ->
-  try_cache(Vm, Context, File).
+  Fun = fun() ->
+      ev8:eval_file(Context, File)
+  end,
+  try_cache(Vm, {eval_file, File}, Fun).
 
-try_cache(Vm, Context, File) ->
-  try_cache(lookup(Vm, {eval_file, File}), Vm, Context, File).
+try_cache(Vm, Key, Fun) ->
+  try_cache(lookup(Vm, Key), Vm, Key, Fun).
 
-try_cache({ok, Result}, _Vm, _Context, _File) ->
+try_cache({ok, Result}, _Vm, _Key, _Fun) ->
   Result;
-try_cache(cache_miss, Vm, Context, File) ->
-  Result = ev8:eval_file(Context, File),
-  insert(Vm, {eval_file, File}, Result),
+try_cache(cache_miss, Vm, Key, Fun) ->
+  Result = Fun(),
+  insert(Vm, Key, Result),
+
   Result.
 
 insert(Vm, Key, Result) ->
