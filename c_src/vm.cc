@@ -709,12 +709,10 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, "eval", length) == 0) {
-          TRACE("Vm::Send - 1\n");
           result = Send(vmContext, env, EVAL, pid, arity, command);
         } else if(strncmp(buffer, "call", length) == 0) {
           result = Send(vmContext, env, CALL, pid, arity, command);
         } else if(strncmp(buffer, "call_respond", length) == 0) {
-          TRACE("CALL - 1\n");
           result = Send(vmContext, env, CALL_RESPOND, pid, arity, command);
         } else if(strncmp(buffer, "set", length) == 0) {
           result = Send(vmContext, env, SET, pid, arity, command);
