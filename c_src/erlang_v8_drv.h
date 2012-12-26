@@ -175,7 +175,7 @@ class JsWrapper {
     ERL_NIF_TERM resourceTerm;
 
     JsWrapper(Vm *_vm,
-        ErlNifEnv *env, Persistent<Value> _value);
+        ErlNifEnv *env, Local<Value> _value);
     ~JsWrapper();
 
     void Destroy();
@@ -193,6 +193,9 @@ class JsWrapper {
         Local<Value> value);
     static ERL_NIF_TERM MakeTerm(ErlNifEnv *env,
         TryCatch trycatch);
+    static ERL_NIF_TERM MakeWrapper(Vm *vm,
+        ErlNifEnv *env,
+        Local<Value> value);
 };
 
 class ErlWrapper {

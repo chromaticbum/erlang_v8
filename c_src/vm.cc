@@ -261,9 +261,8 @@ void Vm::ExecuteEval(JsExec *jsExec) {
             !(result = script->Run()).IsEmpty()) {
           if(enif_get_int(env, wrapTerm, &wrap)) {
             if(wrap) {
-              JsWrapper *jsWrapper = new JsWrapper(this,
-                  env, Persistent<Value>::New(result));
-              term = jsWrapper->resourceTerm;
+              term = JsWrapper::MakeWrapper(this,
+                  env, result);
             } else {
               term = JsWrapper::MakeTerm(this,
                   env, result);
@@ -429,9 +428,8 @@ void Vm::ExecuteGet(JsExec *jsExec) {
         Local<Value> fieldValue = obj->Get(fieldHandle);
 
         if(wrap) {
-          JsWrapper *jsWrapper = new JsWrapper(this,
-              env, Persistent<Value>::New(fieldValue));
-          term = jsWrapper->resourceTerm;
+          term = JsWrapper::MakeWrapper(this,
+              env, fieldValue);
         } else {
           term = JsWrapper::MakeTerm(this,
               env, fieldValue);
@@ -488,8 +486,7 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
         Local<Value> result = fun->ToObject()->CallAsFunction(recv, length, args);
 
         if(wrap) {
-          JsWrapper *jsWrapper = new JsWrapper(this, env, Persistent<Value>::New(result));
-          term = jsWrapper->resourceTerm;
+          term = JsWrapper::MakeWrapper(this, env, result);
         } else {
           term = JsWrapper::MakeTerm(this, env, result);
         }
@@ -499,8 +496,7 @@ ERL_NIF_TERM Vm::ExecuteCall(JsCallType type,
         Local<Value> result = fun->ToObject()->CallAsConstructor(length, args);
 
         if(wrap) {
-          JsWrapper *jsWrapper = new JsWrapper(this, env, Persistent<Value>::New(result));
-          term = jsWrapper->resourceTerm;
+          term = JsWrapper::MakeWrapper(this, env, result);
         } else {
           term = JsWrapper::MakeTerm(this, env, result);
         }

@@ -9,9 +9,9 @@ static void JsWrapperDelete(void *ptr) {
 }
 
 JsWrapper::JsWrapper(Vm *_vm,
-      ErlNifEnv *env, Persistent<Value> _value) {
+      ErlNifEnv *env, Local<Value> _value) {
   vm = _vm;
-  value = _value;
+  value = Persistent<Value>::New(_value);
 
   erlJsWrapper = (ErlJsWrapper *)enif_alloc_resource(JsWrapperResource, sizeof(ErlJsWrapper));
   erlJsWrapper->jsWrapper = this;
@@ -121,9 +121,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     } else if(value->IsArray()) {
       return MakeList(vm, env, Local<Array>::Cast(value));
     } else if(obj->IsCallable()) {
-      JsWrapper *jsWrapper = new JsWrapper(vm, env, Persistent<Value>::New(value));
-
-      return jsWrapper->resourceTerm;
+      return MakeWrapper(vm, env, value);
     } else {
       return MakeStruct(vm, env, value->ToObject());
     }
@@ -155,4 +153,11 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
 
     return enif_make_atom(env, "undefined");
   }
+}
+
+ERL_NIF_TERM JsWrapper::MakeWrapper(Vm *vm,
+    ErlNifEnv *env, Local<Value> value) {
+  JsWrapper *jsWrapper = new JsWrapper(vm, env, value);
+
+  return jsWrapper->resourceTerm;
 }
