@@ -3,17 +3,19 @@
 static void ErlWrapperDestroy(Persistent<Value> value, void *ptr) {
   TRACE("ErlWrapperDestroy\n");
   Handle<External> external = Handle<External>::Cast(value);
-  ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+  ErlExternal *erlExternal = (ErlExternal *)external->Value();
+  ErlWrapper *erlWrapper = (ErlWrapper *)erlExternal->ptr;
   value.Dispose();
-  V8::AdjustAmountOfExternalAllocatedMemory((intptr_t)(-sizeof(ErlWrapper)));
 
+  free(erlExternal);
   delete erlWrapper;
 }
 
 static Handle<Value> WrapFun(const Arguments &args) {
   TRACE("WrapFun\n");
   Handle<External> external = Local<External>::Cast(args.Data());
-  ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+  ErlExternal *erlExternal = (ErlExternal *)external->Value();
+  ErlWrapper *erlWrapper = (ErlWrapper *)erlExternal->ptr;
   ErlNifEnv *env = enif_alloc_env();
   unsigned length = args.Length();
   ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
@@ -50,9 +52,10 @@ ErlWrapper::~ErlWrapper() {
 }
 
 Persistent<External> ErlWrapper::MakeExternal() {
-  V8::AdjustAmountOfExternalAllocatedMemory(sizeof(ErlWrapper));
-  Persistent<External> external = Persistent<External>::New(External::New(this));
-
+  ErlExternal *erlExternal = (ErlExternal *)malloc(sizeof(ErlExternal));
+  erlExternal->type = WRAPPER;
+  erlExternal->ptr = this;
+  Persistent<External> external = Persistent<External>::New(External::New(erlExternal));
   external.MakeWeak(NULL, ErlWrapperDestroy);
 
   return external;
@@ -88,6 +91,8 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
   ErlNifBinary binary;
   ErlJsWrapper *erlJsWrapper;
   const ERL_NIF_TERM *terms;
+  ErlVm *erlVm;
+  ErlVmContext *erlVmContext;
 
   Local<Value> value;
   if(enif_get_atom_length(env, term, &_uint, ERL_NIF_LATIN1)) {
@@ -124,6 +129,10 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     value = Integer::NewFromUnsigned(_uint64);
   } else if(enif_get_ulong(env, term, &_ulong)) {
     value = Integer::NewFromUnsigned(_ulong);
+  } else if(enif_get_resource(env, term, VmResource, (void **)(&erlVm))) {
+    value = Local<Value>::New(erlVm->vm->MakeHandle());
+  } else if(enif_get_resource(env, term, VmContextResource, (void **)(&erlVmContext))) {
+    value = Local<Value>::New(erlVmContext->vmContext->MakeHandle());
   } else if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
     TRACE("ErlWrapper::MakeHandle - RESOURCE\n");
     value = Local<Value>::New(erlJsWrapper->jsWrapper->value);

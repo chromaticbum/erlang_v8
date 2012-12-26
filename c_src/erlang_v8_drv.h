@@ -40,6 +40,17 @@ typedef struct {
 } ErlJsWrapper;
 
 typedef enum {
+  WRAPPER,
+  VM,
+  VM_CONTEXT
+} ErlExternalType;
+
+typedef struct {
+  ErlExternalType type;
+  void *ptr;
+} ErlExternal;
+
+typedef enum {
   EXIT,
   EVAL,
   CALL,
@@ -92,6 +103,7 @@ class Vm {
     Vm(ErlNifEnv *_env);
     ~Vm();
 
+    Handle<Value> MakeHandle();
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
     void SetServer(ErlNifPid pid);
     VmContext *CurrentContext();
@@ -151,6 +163,7 @@ class VmContext {
     VmContext(Vm *_vm, ErlNifEnv *env);
     ~VmContext();
 
+    Handle<Value> MakeHandle();
     ERL_NIF_TERM MakeTerm(ErlNifEnv *env);
 };
 

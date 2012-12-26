@@ -2,6 +2,14 @@
 
 static int _id = 0;
 
+static void VmDestroy(Persistent<Value> value, void *ptr) {
+  TRACE("VmDestroy\n");
+  Handle<External> external = Handle<External>::Cast(value);
+  ErlExternal *erlExternal = (ErlExternal *)external->Value();
+  value.Dispose();
+  free(erlExternal);
+}
+
 static void *StartRunLoop(void *ptr) {
   Vm *vm = (Vm *)ptr;
   vm->RunLoop();
@@ -43,6 +51,17 @@ Vm::~Vm() {
   enif_mutex_destroy(mutex);
   enif_cond_destroy(cond2);
   enif_mutex_destroy(mutex2);
+}
+
+Handle<Value> Vm::MakeHandle() {
+  ErlExternal *erlExternal = (ErlExternal *)malloc(sizeof(ErlExternal));
+  erlExternal->type = VM;
+  erlExternal->ptr = this;
+  Persistent<External> external =
+    Persistent<External>::New(External::New(erlExternal));
+  external.MakeWeak(NULL, VmDestroy);
+
+  return external;
 }
 
 ERL_NIF_TERM Vm::MakeTerm(ErlNifEnv *env) {

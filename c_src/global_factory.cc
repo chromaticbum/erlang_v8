@@ -45,7 +45,7 @@ Persistent<ObjectTemplate> GlobalFactory::Generate(Vm *vm,
   Local<Object> erlangV8 = Object::New();
 
   global->Set(String::New("__ev8__"), erlangV8);
-  erlangV8->Set(String::New("vm"), ErlWrapper::MakeHandle(vm, env, vm->term));
+  erlangV8->Set(String::New("vm"), vm->MakeHandle());
   Handle<External> external = External::New(vm);
   erlangV8->SetAccessor(String::New("context"), GetContext,
       NULL, external);

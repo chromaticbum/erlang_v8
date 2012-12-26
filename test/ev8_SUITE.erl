@@ -264,6 +264,8 @@ ev8__(Config) ->
   C = ?config(context, Config),
 
   Vm = evo8:eval(C, <<"__ev8__.vm">>),
+  Vm2 = evo8:eval(C, <<"__ev8__.vm">>),
+  ev8:new_context(Vm2),
   C = evo8:eval(C, <<"__ev8__.context">>),
   <<"js/test.erl">> = evo8:eval(C, {"js/test.erl", 0}, <<"__ev8__.script_name">>),
   ev8:set(C, global, <<"scriptFun">>, fun()->

@@ -102,9 +102,22 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
 
     if(value->IsExternal()) {
       Handle<External> external = Handle<External>::Cast(value);
-      ErlWrapper *erlWrapper = (ErlWrapper *)external->Value();
+      ErlExternal *erlExternal = (ErlExternal *)external->Value();
+      Vm *vm;
+      VmContext *vmContext;
+      ErlWrapper *erlWrapper;
 
-      return enif_make_copy(env, erlWrapper->term);
+      switch(erlExternal->type) {
+        case VM:
+          vm = (Vm *)erlExternal->ptr;
+          return vm->MakeTerm(env);
+        case VM_CONTEXT:
+          vmContext = (VmContext *)erlExternal->ptr;
+          return vmContext->MakeTerm(env);
+        case WRAPPER:
+          erlWrapper = (ErlWrapper *)erlExternal->ptr;
+          return enif_make_copy(env, erlWrapper->term);
+      }
     } else if(value->IsArray()) {
       return MakeList(vm, env, Local<Array>::Cast(value));
     } else if(obj->IsCallable()) {

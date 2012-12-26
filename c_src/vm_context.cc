@@ -2,6 +2,14 @@
 
 static unsigned _id = 0;
 
+static void VmContextDestroy(Persistent<Value> value, void *ptr) {
+  TRACE("VmContextDestroy\n");
+  Handle<External> external = Handle<External>::Cast(value);
+  ErlExternal *erlExternal = (ErlExternal *)external->Value();
+  value.Dispose();
+  free(erlExternal);
+}
+
 VmContext::VmContext(Vm *_vm, ErlNifEnv *env) {
   TRACE("VmContext::VmContext\n");
   vm = _vm;
@@ -28,6 +36,17 @@ VmContext::~VmContext() {
   context.Clear();
 
   enif_release_resource(vm->erlVm);
+}
+
+Handle<Value> VmContext::MakeHandle() {
+  ErlExternal *erlExternal = (ErlExternal *)malloc(sizeof(ErlExternal));
+  erlExternal->type = VM_CONTEXT;
+  erlExternal->ptr = this;
+  Persistent<External> external = Persistent<External>::New(
+      External::New(erlExternal));
+  external.MakeWeak(NULL, VmContextDestroy);
+
+  return external;
 }
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
