@@ -25,6 +25,7 @@ static Handle<Value> WrapFun(const Arguments &args) {
     terms[i] = JsWrapper::MakeTerm(erlWrapper->vm, env, args[i]);
   }
 
+  // TODO this for constructor
   ERL_NIF_TERM term = enif_make_tuple4(env,
       enif_make_atom(env, "call"),
       erlWrapper->vm->CurrentContext()->MakeTerm(env),
@@ -35,7 +36,6 @@ static Handle<Value> WrapFun(const Arguments &args) {
   free(terms);
   enif_clear_env(env);
   enif_free_env(env);
-  // TODO error handling
 
   return erlWrapper->vm->Poll();
 }

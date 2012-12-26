@@ -45,8 +45,6 @@ Vm::Vm(ErlNifEnv *_env) {
 
 Vm::~Vm() {
   Stop();
-  // TODO get this working, eh?
-  //global.Dispose();
   enif_cond_destroy(cond);
   enif_mutex_destroy(mutex);
   enif_cond_destroy(cond2);
@@ -310,11 +308,15 @@ ERL_NIF_TERM Vm::MakeError(ErlNifEnv *env, ERL_NIF_TERM reason) {
 void Vm::ExecuteExit(JsExec *jsExec) {
   TRACE("Vm::ExecuteExit\n");
 
-  // Dead lock for some reason
-  //Locker locker(isolate);
-  //TRACE("Vm::Exit - 1\n");
-  //isolate->Dispose();
-  //TRACE("Vm::Exit - 2\n");
+  Locker locker(isolate);
+  Isolate::Scope iscope(isolate);
+  TRACE("Vm::ExecuteExit - 1\n");
+  global.Dispose();
+  while(Isolate::GetCurrent() == isolate) {
+    Isolate::GetCurrent()->Exit();
+  }
+  isolate->Dispose();
+  TRACE("Vm::ExecuteExit - 2\n");
 
   free(jsExec);
   enif_mutex_unlock(mutex);
@@ -603,7 +605,6 @@ Handle<Value> Vm::ExecuteCallRespond(JsExec *jsExec) {
       }
     } else {
       value = ThrowException(Exception::Error(String::New("erlang function returned error")));
-      // TODO handle error condition
     }
   } else {
     value = ThrowException(Exception::Error(String::New("badarity")));
