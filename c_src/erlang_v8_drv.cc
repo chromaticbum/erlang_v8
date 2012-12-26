@@ -58,13 +58,16 @@ static void JsWrapperDestroy(ErlNifEnv *env, void *obj) {
 static ERL_NIF_TERM VmExecute(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
+  TRACE("VmExecute\n");
   ErlVm *erlVm;
 
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
+    TRACE("VmExecute - 1\n");
     Vm *vm = erlVm->vm;
     ErlNifPid pid;
 
     if(enif_get_local_pid(env, argv[1], &pid)) {
+      TRACE("VmExecute - 2\n");
       return vm->Send(NULL, env, pid, argv[2]);
     } else {
       return enif_make_badarg(env);
