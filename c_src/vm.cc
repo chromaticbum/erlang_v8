@@ -584,26 +584,25 @@ Handle<Value> Vm::ExecuteCallRespond(JsExec *jsExec) {
     ERL_NIF_TERM responseTerm = jsExec->terms[0];
 
     if(enif_get_tuple(env, responseTerm, &arity, &terms)) {
-      TRACE("WE HAVE TUPLE\n");
-
       if(arity == 2 && enif_get_atom_length(env, terms[0], &length, ERL_NIF_LATIN1)) {
         char *buffer = (char *)malloc((length + 1) * sizeof(char));
         enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1);
+
         if(strncmp(buffer, "ok", length) == 0) {
           value = ErlWrapper::MakeHandle(this, env, terms[1]);
         } else if(strncmp(buffer, "error", length) == 0) {
-          value = ThrowException(Exception::Error(String::New("erlang function returned error")));
+          value = ThrowException(Exception::Error(String::New("erlang error")));
         } else {
-          value = ThrowException(Exception::Error(String::New("erlang function returned error")));
+          value = ThrowException(Exception::Error(String::New("bad response tuple")));
         }
       } else {
-        value = ThrowException(Exception::Error(String::New("erlang function returned error")));
+        value = ThrowException(Exception::Error(String::New("bad response tuple")));
       }
     } else {
-      value = ThrowException(Exception::Error(String::New("erlang function returned error")));
+      value = ThrowException(Exception::Error(String::New("bad response tuple")));
     }
   } else {
-    value = ThrowException(Exception::Error(String::New("badarity")));
+    value = ThrowException(Exception::Error(String::New("bad response")));
   }
 
   PostResult(jsExec->pid, env, enif_make_atom(env, "ok"));
