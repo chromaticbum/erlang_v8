@@ -22,9 +22,6 @@ VmContext::VmContext(Vm *_vm, ErlNifEnv *env) {
   enif_release_resource(erlVmContext);
   enif_keep_resource(vm->erlVm);
 
-  Locker locker(vm->isolate);
-  Isolate::Scope iscope(vm->isolate);
-  HandleScope handle_scope;
   context = Persistent<Context>::New(Context::New(NULL, vm->global));
 }
 
