@@ -5,7 +5,7 @@
 %% API
 -export([start_link/1,
         create/1,
-        call/3]).
+        call/4]).
 
 %% gen_server callbacks
 -export([init/1,
@@ -22,8 +22,8 @@
 %%% API
 %%%===================================================================
 
-call(Pid, Fun, Args) ->
-  gen_server:cast(Pid, {call, Fun, Args}).
+call(Pid, This, Fun, Args) ->
+  gen_server:cast(Pid, {call, This, Fun, Args}).
 
 start_link(Context) ->
   gen_server:start_link(?MODULE, [Context], []).
@@ -42,9 +42,10 @@ init([Context]) ->
 handle_call(_Request, _From, State) ->
   {stop, normal, {error, badcall}, State}.
 
-handle_cast({call, Fun, Args}, State) ->
+handle_cast({call, This, Fun, Args}, State) ->
+  io:format("Hello there: ~p: ~p~n", [Fun, Args]),
   Context = State#state.context,
-  ev8:call_respond(Context, make_call(Fun, Args)),
+  ev8:call_respond(Context, make_call(Fun, [{Context, This} | Args])),
 
   {stop, normal, State}.
 

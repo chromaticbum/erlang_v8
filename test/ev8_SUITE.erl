@@ -162,14 +162,14 @@ set_no_wrap(Config) ->
 
   ok.
 
-test_fun(_This) ->
+test_fun(_) ->
   <<"test_funn">>.
 
 wrapped_fun(Config) ->
   C = ?config(context, Config),
 
   Obj = ev8:eval(C, <<"var a = new Object(); a">>),
-  ev8:set(C, Obj, <<"erlFun">>, fun(_This, A, B) -> A + B end),
+  ev8:set(C, Obj, <<"erlFun">>, fun(_, A, B) -> A + B end),
 
   6 = evo8:eval(C, <<"a.erlFun(2, 4)">>),
 
