@@ -47,6 +47,5 @@ Handle<Value> VmContext::MakeHandle() {
 }
 
 ERL_NIF_TERM VmContext::MakeTerm(ErlNifEnv *env) {
-  TRACE("VmContext::MakeTerm: %u-%s\n", strlen(id), id);
   return enif_make_resource_binary(env, erlVmContext, id, strlen(id));
 }
