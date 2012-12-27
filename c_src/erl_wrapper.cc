@@ -17,12 +17,13 @@ static Handle<Value> WrapFun(const Arguments &args) {
   ErlExternal *erlExternal = (ErlExternal *)external->Value();
   ErlWrapper *erlWrapper = (ErlWrapper *)erlExternal->ptr;
   ErlNifEnv *env = enif_alloc_env();
-  unsigned length = args.Length();
-  ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(sizeof(ERL_NIF_TERM) * length);
+  unsigned length = args.Length() + 1;
+  ERL_NIF_TERM *terms = (ERL_NIF_TERM *)malloc(length * sizeof(ERL_NIF_TERM));
 
-  for(int i = 0; i < length; i++) {
+  terms[0] = JsWrapper::MakeWrapper(erlWrapper->vm, env, args.This());
+  for(int i = 1; i < length; i++) {
     TRACE("WrapFun - 1\n");
-    terms[i] = JsWrapper::MakeTerm(erlWrapper->vm, env, args[i]);
+    terms[i] = JsWrapper::MakeTerm(erlWrapper->vm, env, args[i - 1]);
   }
 
   // TODO this for constructor
