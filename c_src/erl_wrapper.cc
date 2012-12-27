@@ -205,6 +205,10 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
       if(enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, "struct", length) == 0) {
           value = MakeObject(vm, env, terms[1]);
+        } else if(strncmp(buffer, "mf", length) == 0) {
+          ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[1]);
+          Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
+          value = fn->GetFunction();
         } else {
           value = ThrowException(
             Exception::Error(String::New("bad tuple: unrecognized atom")));

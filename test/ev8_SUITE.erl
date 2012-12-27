@@ -9,6 +9,10 @@
   ]).
 
 -export([
+  test_fun/1
+  ]).
+
+-export([
   eval_file/1,
   eval/1,
   script_origin/1,
@@ -158,6 +162,9 @@ set_no_wrap(Config) ->
 
   ok.
 
+test_fun(_This) ->
+  <<"test_funn">>.
+
 wrapped_fun(Config) ->
   C = ?config(context, Config),
 
@@ -165,6 +172,9 @@ wrapped_fun(Config) ->
   ev8:set(C, Obj, <<"erlFun">>, fun(_This, A, B) -> A + B end),
 
   6 = evo8:eval(C, <<"a.erlFun(2, 4)">>),
+
+  ev8:set(C, global, <<"testFun">>, {mf, {?MODULE, test_fun}}),
+  <<"test_funn">> = evo8:eval(C, <<"testFun()">>),
 
   ok.
 
