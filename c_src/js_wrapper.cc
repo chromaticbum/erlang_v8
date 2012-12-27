@@ -132,7 +132,6 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
       return enif_make_atom(env, "false");
     }
   } else if(value->IsInt32()) {
-    TRACE("MAKE INT\n");
     return enif_make_int(env, value->Int32Value());
   } else if(value->IsUint32()) {
     return enif_make_uint(env, value->Uint32Value());
