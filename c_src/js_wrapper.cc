@@ -94,6 +94,16 @@ ERL_NIF_TERM JsWrapper::MakeStruct(Vm *vm,
       term);
 }
 
+ERL_NIF_TERM JsWrapper::MakeDate(Vm *vm,
+    ErlNifEnv *env,
+    Local<Value> value) {
+  Local<Date> date = Local<Date>::Cast(value);
+
+  return enif_make_tuple2(env,
+      enif_make_atom(env, "date"),
+      enif_make_uint(env, date->NumberValue() / 1000));
+}
+
 ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     ErlNifEnv *env,
     Local<Value> value) {
@@ -120,6 +130,8 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
       }
     } else if(value->IsArray()) {
       return MakeList(vm, env, Local<Array>::Cast(value));
+    } else if(value->IsDate()) {
+      return MakeDate(vm, env, value);
     } else if(obj->IsCallable()) {
       return MakeWrapper(vm, env, value);
     } else {

@@ -189,6 +189,22 @@ Local<Value> ErlWrapper::MakeObject(Vm *vm,
   return object;
 }
 
+Local<Value> ErlWrapper::MakeDate(Vm *vm,
+    ErlNifEnv *env,
+    ERL_NIF_TERM term) {
+  unsigned long time;
+  Handle<Value> value;
+
+  if(enif_get_ulong(env, term, &time)) {
+    value = Date::New(time * 1000);
+  } else {
+    value = ThrowException(
+      Exception::Error(String::New("bad time")));
+  }
+
+  return Local<Value>::New(value);
+}
+
 Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
     ErlNifEnv *env, int arity,
     const ERL_NIF_TERM *terms) {
@@ -209,6 +225,8 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
           ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[1]);
           Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
           value = fn->GetFunction();
+        } else if(strncmp(buffer, "date", length) == 0) {
+          value = MakeDate(vm, env, terms[1]);
         } else {
           value = ThrowException(
             Exception::Error(String::New("bad tuple: unrecognized atom")));

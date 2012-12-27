@@ -182,6 +182,9 @@ class JsWrapper {
 
     static ERL_NIF_TERM MakeBinary(ErlNifEnv *env,
         Handle<Value> value);
+    static ERL_NIF_TERM MakeDate(Vm *vm,
+        ErlNifEnv *env,
+        Local<Value> obj);
     static ERL_NIF_TERM MakeStruct(Vm *vm,
         ErlNifEnv *env,
         Local<Object> obj);
@@ -209,6 +212,9 @@ class ErlWrapper {
     ~ErlWrapper();
 
     Persistent<External> MakeExternal();
+    static Local<Value> MakeDate(Vm *vm,
+        ErlNifEnv *env,
+        ERL_NIF_TERM term);
     static Local<Value> MakeWrapper(Vm *vm,
         ERL_NIF_TERM term);
     static Local<Value> MakeObject(Vm *vm,
