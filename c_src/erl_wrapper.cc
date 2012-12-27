@@ -152,12 +152,74 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
     value = MakeArray(vm, env, _uint, term);
   } else if(enif_get_tuple(env, term, &_int, &terms)) {
     TRACE("ErlWrapper::MakeHandle - TUPLE\n");
-    ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[0]);
-    value = Local<External>::New(erlWrapper->MakeExternal());
+    value = MakeTupleHandle(vm, env, _int, terms);
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     value = Local<External>::New(erlWrapper->MakeExternal());
   }
 
   return value;
+}
+
+Local<Value> ErlWrapper::MakeWrapper(Vm *vm,
+    ERL_NIF_TERM term) {
+  ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
+
+  return Local<Value>::New(erlWrapper->MakeExternal());
+}
+
+Local<Value> ErlWrapper::MakeObject(Vm *vm,
+    ErlNifEnv *env,
+    ERL_NIF_TERM term) {
+  int arity;
+  const ERL_NIF_TERM *terms;
+  ERL_NIF_TERM head;
+  Local<Object> object = Object::New();
+
+  while(enif_get_list_cell(env, term, &head, &term)) {
+    if(enif_get_tuple(env, head, &arity, &terms) &&
+        arity == 2) {
+      Handle<Value> fieldValue = MakeHandle(vm, env, terms[0]);
+      Handle<Value> value = MakeHandle(vm, env, terms[1]);
+
+      object->Set(fieldValue, value);
+    }
+  }
+
+  return object;
+}
+
+Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
+    ErlNifEnv *env, int arity,
+    const ERL_NIF_TERM *terms) {
+  Handle<Value> value;
+
+  if(arity == 1) {
+    value = MakeWrapper(vm, terms[0]);
+  } else if(arity == 2) {
+    unsigned length;
+
+    if(enif_get_atom_length(env, terms[0], &length, ERL_NIF_LATIN1)) {
+      char *buffer = (char *)malloc((length + 1) * sizeof(char));
+
+      if(enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1)) {
+        if(strncmp(buffer, "struct", length) == 0) {
+          value = MakeObject(vm, env, terms[1]);
+        } else {
+          value = ThrowException(
+            Exception::Error(String::New("bad tuple: unrecognized atom")));
+        }
+      } else {
+        value = ThrowException(
+          Exception::Error(String::New("bad tuple: first argument not an atom")));
+      }
+
+      free(buffer);
+    } else {
+      value = ThrowException(
+          Exception::Error(String::New("bad tuple")));
+    }
+  }
+
+  return Local<Value>::New(value);
 }

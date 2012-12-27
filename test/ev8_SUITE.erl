@@ -257,6 +257,10 @@ objects(Config) ->
   {struct, [{<<"field1">>, <<"godzilla">>},
             {<<"field2">>, <<"mothra">>}]} = evo8:eval(C, <<"a">>),
 
+  ev8:set(C, global, <<"godzilla">>, {struct, [{<<"godzilla">>, <<"rocks">>}]}),
+  {struct, [{<<"godzilla">>, <<"rocks">>}]} = evo8:eval(C, <<"godzilla">>),
+  <<"rocks">> = evo8:eval(C, <<"godzilla.godzilla">>),
+
   ok.
 
 ev8__(Config) ->

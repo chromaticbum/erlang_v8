@@ -209,9 +209,18 @@ class ErlWrapper {
     ~ErlWrapper();
 
     Persistent<External> MakeExternal();
+    static Local<Value> MakeWrapper(Vm *vm,
+        ERL_NIF_TERM term);
+    static Local<Value> MakeObject(Vm *vm,
+        ErlNifEnv *env,
+        ERL_NIF_TERM term);
     static Local<Value> MakeHandle(Vm *vm,
         ErlNifEnv *env,
         ERL_NIF_TERM term);
+    static Local<Value> MakeTupleHandle(Vm *vm,
+        ErlNifEnv *env,
+        int arity,
+        const ERL_NIF_TERM *terms);
     static Local<Value> MakeArray(Vm *vm,
         ErlNifEnv *env,
         unsigned length,
