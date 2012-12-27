@@ -64,6 +64,8 @@ static ERL_NIF_TERM VmExecute(ErlNifEnv *env,
   if(enif_get_resource(env, argv[0], VmResource, (void **)(&erlVm))) {
     TRACE("VmExecute - 1\n");
     Vm *vm = erlVm->vm;
+    enif_mutex_lock(vm->mutex);
+    enif_mutex_lock(vm->mutex2);
     ErlNifPid pid;
 
     if(enif_get_local_pid(env, argv[1], &pid)) {
