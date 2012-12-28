@@ -3,9 +3,7 @@ DIALYZER = dialyzer
 
 all: compile
 
-v8: c_src/v8/.git/config c_src/v8/out/native/libv8_base.a
-
-submodules: c_src/v8/.git/config
+v8: c_src/v8/.git c_src/v8/out/native/libv8_base.a
 
 c_src/v8/.git/config:
 	git submodule init
@@ -14,7 +12,7 @@ c_src/v8/.git/config:
 c_src/v8/out/native/libv8_base.a:
 	cd ./c_src/v8/; make dependencies; make native
 
-compile: submodules v8 rebar-compile
+compile: v8 rebar-compile
 	
 rebar-compile:
 	./rebar compile
