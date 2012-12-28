@@ -307,16 +307,14 @@ ERL_NIF_TERM Vm::MakeError(ErlNifEnv *env, ERL_NIF_TERM reason) {
 void Vm::ExecuteExit(JsExec *jsExec) {
   TRACE("Vm::ExecuteExit\n");
 
-  // TODO make this work please
-  //Locker locker(isolate);
-  //Isolate::Scope iscope(isolate);
-  //TRACE("Vm::ExecuteExit - 1\n");
-  //global.Dispose();
-  //while(Isolate::GetCurrent() == isolate) {
-    //Isolate::GetCurrent()->Exit();
-  //}
-  //isolate->Dispose();
-  //TRACE("Vm::ExecuteExit - 2\n");
+  isolate->Enter();
+  TRACE("Vm::ExecuteExit - 1\n");
+  global.Dispose();
+  while(Isolate::GetCurrent() == isolate) {
+    isolate->Exit();
+  }
+  isolate->Dispose();
+  TRACE("Vm::ExecuteExit - 2\n");
 
   free(jsExec);
   enif_mutex_unlock(mutex);
