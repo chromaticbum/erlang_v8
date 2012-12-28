@@ -5,7 +5,8 @@
 -export([
   new_vm/0,
   set_vm_server/2,
-  new_context/1
+  new_context/1,
+  vm_for_context/1
   ]).
 
 % VM Functions
@@ -22,7 +23,6 @@
   heap_statistics/1,
   call_respond/2,
   wrap_fun/2,
-  transaction/2,
   install/2
   ]).
 
@@ -48,11 +48,10 @@ set_vm_server(Vm, Server) ->
 new_context(Vm) ->
   v8nif:vm_execute(Vm, self(), {new_context}),
   Ctx = receive_result(),
-  ev8txn:add_context(Vm, Ctx),
   Ctx.
 
-transaction(Context, Fun) ->
-  ev8txn:transaction(Context, Fun).
+vm_for_context(Context) ->
+  v8nif:vm_for_context(Context).
 
 eval_file(Context, File) ->
   execute_eval_file(Context, File, 1).

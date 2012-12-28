@@ -9,7 +9,7 @@
   ]).
 
 -export([
-  test_fun/1
+  test_fun/2
   ]).
 
 -export([
@@ -162,14 +162,14 @@ set_no_wrap(Config) ->
 
   ok.
 
-test_fun(_) ->
+test_fun(_, []) ->
   <<"test_funn">>.
 
 wrapped_fun(Config) ->
   C = ?config(context, Config),
 
   Obj = ev8:eval(C, <<"var a = new Object(); a">>),
-  ev8:set(C, Obj, <<"erlFun">>, fun(_, A, B) -> A + B end),
+  ev8:set(C, Obj, <<"erlFun">>, fun(_, [A, B]) -> A + B end),
 
   6 = evo8:eval(C, <<"a.erlFun(2, 4)">>),
 
@@ -200,7 +200,7 @@ call(Config) ->
 
   Obj = ev8:eval(C, <<"new String('hello,world')">>),
   Fun = ev8:get(C, Obj, <<"split">>),
-  ev8:set(C, Obj, <<"myFun">>, fun(_This, A, B) -> A + B end),
+  ev8:set(C, Obj, <<"myFun">>, fun(_This, [A, B]) -> A + B end),
   Fun2 = ev8:get(C, Obj, <<"myFun">>),
   [<<"hello">>, <<"world">>] = evo8:call(C, Obj, Fun, [<<",">>]),
 
@@ -237,9 +237,9 @@ multi_context_call(Config)->
   42 = evo8:call(C2, Fun2, []),
 
   C3 = ev8:new_context(Vm),
-  ev8:set(C3, global, <<"anotherFun">>, fun(_This) -> ev8:call(C2, Fun2, []) end),
+  ev8:set(C3, global, <<"anotherFun">>, fun(_, []) -> ev8:call(C2, Fun2, []) end),
   Fun3 = ev8:get(C3, global, <<"anotherFun">>),
-  ev8:set(C1, global, <<"multiFun">>, fun(_This) ->
+  ev8:set(C1, global, <<"multiFun">>, fun(_, []) ->
         [ev8:eval(C2, <<"'crazy context'">>),
          ev8:call(C2, Fun2, []),
          ev8:call(C3, Fun3, [])]
@@ -282,7 +282,7 @@ ev8__(Config) ->
   ev8:new_context(Vm2),
   C = evo8:eval(C, <<"__ev8__.context">>),
   <<"js/test.erl">> = evo8:eval(C, {"js/test.erl", 0}, <<"__ev8__.script_name">>),
-  ev8:set(C, global, <<"scriptFun">>, fun(_This)->
+  ev8:set(C, global, <<"scriptFun">>, fun(_, [])->
         evo8:eval(C, {"js/another.erl", 0}, <<"__ev8__.script_name">>)
     end),
   <<"js/another.erl">> = evo8:eval(C, {"js/test.erl", 0}, <<"scriptFun()">>),

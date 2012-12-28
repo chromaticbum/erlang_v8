@@ -12,11 +12,9 @@ start() ->
   ets:new(ev8cache_lookup, [set, public, named_table, {read_concurrency, true}]).
 
 eval_file(Context, File) ->
-  eval_file(ev8txn:vm(Context), Context, File).
+  eval_file(ev8:vm_for_context(Context), Context, File).
 
-eval_file({error, not_found}, _Context, _File) ->
-  {error, badcontext};
-eval_file({ok, Vm}, Context, File) ->
+eval_file(Vm, Context, File) ->
   Fun = fun() ->
       ev8:eval_file(Context, File)
   end,

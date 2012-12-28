@@ -6,7 +6,8 @@
   new_vm/0,
   set_vm_server/2,
   execute/3,
-  vm_execute/3
+  vm_execute/3,
+  vm_for_context/1
   ]).
 
 -export_type([
@@ -72,3 +73,7 @@ execute(_Ctx, _Pid, _Command) ->
 -spec vm_execute(vm(), pid(), any()) -> ok.
 vm_execute(_Ctx, _Pid, _Command) ->
   elrang:nif_error(not_loaded).
+
+-spec vm_for_context(vm_context()) -> vm().
+vm_for_context(_Ctx) ->
+  erlang:nif_error(not_loaded).

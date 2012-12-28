@@ -79,6 +79,18 @@ static ERL_NIF_TERM VmExecute(ErlNifEnv *env,
   }
 }
 
+static ERL_NIF_TERM VmForContext(ErlNifEnv *env,
+    int argc,
+    const ERL_NIF_TERM argv[]) {
+  ErlVmContext *erlVmContext;
+
+  if(enif_get_resource(env, argv[0], VmContextResource, (void **)(&erlVmContext))) {
+    return erlVmContext->vmContext->vm->MakeTerm(env);
+  } else {
+    return enif_make_badarg(env);
+  }
+}
+
 static ERL_NIF_TERM Execute(ErlNifEnv *env,
     int argc,
     const ERL_NIF_TERM argv[]) {
@@ -114,7 +126,8 @@ static ErlNifFunc nif_funcs[] = {
   {"new_vm", 0, NewVm},
   {"set_vm_server", 2, SetVmServer},
   {"execute", 3, Execute},
-  {"vm_execute", 3, VmExecute}
+  {"vm_execute", 3, VmExecute},
+  {"vm_for_context", 1, VmForContext}
 };
 
 ERL_NIF_INIT(v8nif, nif_funcs, Load, NULL, NULL, NULL)

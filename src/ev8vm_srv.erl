@@ -40,7 +40,6 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({call, Context, This, Fun, Args}, State) ->
-  io:format("Calle: ~p~n", [Args]),
   {ok, Pid} = ev8call_srv:create(Context),
   ev8call_srv:call(Pid, This, Fun, Args),
   {noreply, State};

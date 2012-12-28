@@ -45,7 +45,7 @@ handle_call(_Request, _From, State) ->
 handle_cast({call, This, Fun, Args}, State) ->
   io:format("Hello there: ~p: ~p~n", [Fun, Args]),
   Context = State#state.context,
-  ev8:call_respond(Context, make_call(Fun, [{Context, This} | Args])),
+  ev8:call_respond(Context, make_call(Fun, [{Context, This}, Args])),
 
   {stop, normal, State}.
 
