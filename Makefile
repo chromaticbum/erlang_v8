@@ -3,7 +3,18 @@ DIALYZER = dialyzer
 
 all: compile
 
-compile: clean rebar-compile
+v8: c_src/v8/.git/config c_src/v8/out/native/libv8_base.a
+
+submodules: c_src/v8/.git/config
+
+c_src/v8/.git/config:
+	git submodule init
+	git submodule update
+
+c_src/v8/out/native/libv8_base.a:
+	cd ./c_src/v8/; make dependencies; make native
+
+compile: submodules v8 rebar-compile
 	
 rebar-compile:
 	./rebar compile
