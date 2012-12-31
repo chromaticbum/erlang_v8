@@ -116,6 +116,22 @@ void Vm::ExecuteCallback(JsExec *jsExec) {
   free(jsExec);
 }
 
+void Vm::ExecuteWrap(JsExec *jsExec) {
+  ERL_NIF_TERM *terms = jsExec->terms;
+  ErlNifEnv *env = jsExec->env;
+  LHCST(this, jsExec->vmContext);
+
+  Local<Value> value = ErlWrapper::MakeHandle(this,
+      env, terms[0]);
+  PostResult(jsExec->pid, env, JsWrapper::MakeWrapper(this,
+        env, value));
+
+  enif_clear_env(env);
+  enif_free_env(env);
+  free(terms);
+  free(jsExec);
+}
+
 Handle<Value> Vm::Poll() {
   TRACE("Vm::Poll\n");
 
@@ -137,6 +153,9 @@ Handle<Value> Vm::Poll() {
 
   TRACE("Vm::Poll - 5\n");
   switch(jsExec2->type) {
+    case WRAP:
+      ExecuteWrap(jsExec2);
+      break;
     case EVAL:
       ExecuteEval(jsExec2);
       break;
@@ -707,7 +726,9 @@ ERL_NIF_TERM Vm::Send(VmContext *vmContext,
     if(enif_get_atom_length(env, command[0], &length, ERL_NIF_LATIN1)) {
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
       if(enif_get_atom(env, command[0], buffer, length + 1, ERL_NIF_LATIN1)) {
-        if(strncmp(buffer, "eval", length) == 0) {
+        if(strncmp(buffer, "wrap", length) == 0) {
+          result = Send(vmContext, env, WRAP, pid, arity, command);
+        } else if(strncmp(buffer, "eval", length) == 0) {
           result = Send(vmContext, env, EVAL, pid, arity, command);
         } else if(strncmp(buffer, "call", length) == 0) {
           result = Send(vmContext, env, CALL, pid, arity, command);

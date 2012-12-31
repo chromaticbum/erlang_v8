@@ -227,6 +227,14 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
           value = fn->GetFunction();
         } else if(strncmp(buffer, "date", length) == 0) {
           value = MakeDate(vm, env, terms[1]);
+        } else if(strncmp(buffer, "eval", length) == 0) {
+          value = MakeEval(vm, env, arity, terms);
+        } else if(strncmp(buffer, "set", length) == 0) {
+          value = MakeSet(vm, env, arity, terms);
+        } else if(strncmp(buffer, "get", length) == 0) {
+          value = MakeGet(vm, env, arity, terms);
+        } else if(strncmp(buffer, "call", length) == 0) {
+          value = MakeCall(vm, env, arity, terms);
         } else {
           value = ThrowException(
             Exception::Error(String::New("bad tuple: unrecognized atom")));
@@ -244,4 +252,32 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
   }
 
   return Local<Value>::New(value);
+}
+
+Local<Value> ErlWrapper::MakeEval(Vm *vm,
+    ErlNifEnv *env,
+    int arity,
+    const ERL_NIF_TERM *terms) {
+  return Local<Value>::New(Undefined());
+}
+
+Local<Value> ErlWrapper::MakeSet(Vm *vm,
+    ErlNifEnv *env,
+    int arity,
+    const ERL_NIF_TERM *terms) {
+  return Local<Value>::New(Undefined());
+}
+
+Local<Value> ErlWrapper::MakeGet(Vm *vm,
+    ErlNifEnv *env,
+    int arity,
+    const ERL_NIF_TERM *terms) {
+  return Local<Value>::New(Undefined());
+}
+
+Local<Value> ErlWrapper::MakeCall(Vm *vm,
+    ErlNifEnv *env,
+    int arity,
+    const ERL_NIF_TERM *terms) {
+  return Local<Value>::New(Undefined());
 }

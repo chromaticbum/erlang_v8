@@ -52,6 +52,7 @@ typedef struct {
 
 typedef enum {
   EXIT,
+  WRAP,
   EVAL,
   CALL,
   CALL_RESPOND,
@@ -116,6 +117,7 @@ class Vm {
     Handle<Value> Poll();
     JsExec *ResetJsExec();
 
+    void ExecuteWrap(JsExec *jsExec);
     void ExecuteCallback(JsExec *jsExec);
     void ExecuteEval(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
@@ -231,4 +233,20 @@ class ErlWrapper {
         ErlNifEnv *env,
         unsigned length,
         ERL_NIF_TERM arrTerm);
+    static Local<Value> MakeEval(Vm *vm,
+        ErlNifEnv *env,
+        int arity,
+        const ERL_NIF_TERM *terms);
+    static Local<Value> MakeSet(Vm *vm,
+        ErlNifEnv *env,
+        int arity,
+        const ERL_NIF_TERM *terms);
+    static Local<Value> MakeGet(Vm *vm,
+        ErlNifEnv *env,
+        int arity,
+        const ERL_NIF_TERM *terms);
+    static Local<Value> MakeCall(Vm *vm,
+        ErlNifEnv *env,
+        int arity,
+        const ERL_NIF_TERM *terms);
 };
