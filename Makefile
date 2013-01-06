@@ -5,7 +5,7 @@ all: compile
 
 v8: c_src/v8/.git c_src/v8/out/native/libv8_base.a
 
-c_src/v8/.git/config:
+c_src/v8/.git:
 	git submodule init
 	git submodule update
 
