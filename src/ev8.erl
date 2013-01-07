@@ -12,6 +12,7 @@
 % VM Functions
 -export([
   wrap/2,
+  unwrap/2,
   eval_file/2,
   eval/2,
   eval/3,
@@ -56,6 +57,9 @@ vm_for_context(Context) ->
 
 wrap(Context, Term) ->
   execute(Context, self(), {wrap, Term}).
+
+unwrap(Context, Term) ->
+  execute(Context, self(), {unwrap, Term}).
 
 eval_file(Context, File) ->
   execute_eval_file(Context, File, 1).

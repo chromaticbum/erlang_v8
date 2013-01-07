@@ -53,6 +53,7 @@ typedef struct {
 typedef enum {
   EXIT,
   WRAP,
+  UNWRAP,
   EVAL,
   CALL,
   CALL_RESPOND,
@@ -118,6 +119,7 @@ class Vm {
     JsExec *ResetJsExec();
 
     void ExecuteWrap(JsExec *jsExec);
+    void ExecuteUnwrap(JsExec *jsExec);
     void ExecuteCallback(JsExec *jsExec);
     void ExecuteEval(JsExec *jsExec);
     void ExecuteSet(JsExec *jsExec);
@@ -233,14 +235,30 @@ class ErlWrapper {
         ErlNifEnv *env,
         unsigned length,
         ERL_NIF_TERM arrTerm);
+    static Local<Value> MakeEvalNoOrigin(Vm *vm,
+        ErlNifEnv *env,
+        ERL_NIF_TERM term);
+    static Local<Value> MakeEvalWithOrigin(Vm *vm,
+        ErlNifEnv *env,
+        ERL_NIF_TERM oriTerm,
+        ERL_NIF_TERM lineTerm,
+        ERL_NIF_TERM colTerm,
+        ERL_NIF_TERM term);
+    static Local<Value> MakeEvalRaw(char *origin,
+        int line, int col, char *script);
     static Local<Value> MakeEval(Vm *vm,
         ErlNifEnv *env,
         int arity,
         const ERL_NIF_TERM *terms);
+    static Local<Value> MakeSetRaw(Local<Value> object,
+        Local<Value> field,
+        Local<Value> fieldValue);
     static Local<Value> MakeSet(Vm *vm,
         ErlNifEnv *env,
         int arity,
         const ERL_NIF_TERM *terms);
+    static Local<Value> MakeGetRaw(Local<Value> object,
+        Local<Value> field);
     static Local<Value> MakeGet(Vm *vm,
         ErlNifEnv *env,
         int arity,
@@ -249,4 +267,9 @@ class ErlWrapper {
         ErlNifEnv *env,
         int arity,
         const ERL_NIF_TERM *terms);
+};
+
+class Util {
+  public:
+    static char *BinaryToBuffer(ErlNifBinary binary);
 };

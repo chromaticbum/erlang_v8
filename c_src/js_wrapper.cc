@@ -107,6 +107,7 @@ ERL_NIF_TERM JsWrapper::MakeDate(Vm *vm,
 ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     ErlNifEnv *env,
     Local<Value> value) {
+  TRACE("JsWrapper::MakeTerm %d\n", value.IsEmpty());
   if(value->IsObject()) {
     Handle<Object> obj = value->ToObject();
 
@@ -151,6 +152,7 @@ ERL_NIF_TERM JsWrapper::MakeTerm(Vm *vm,
     // Must be a double
     return enif_make_double(env, value->NumberValue());
   } else if(value->IsString()) {
+    TRACE("IS STRING\n");
     String::AsciiValue ascii(value);
     ERL_NIF_TERM binary;
     char *buffer = (char *)enif_make_new_binary(env, strlen(*ascii), &binary);

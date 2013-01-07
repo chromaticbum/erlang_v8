@@ -118,7 +118,6 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
   } else if(enif_get_double(env, term, &_double)) {
     value = Number::New(_double);
   } else if(enif_get_int(env, term, &_int)) {
-    TRACE("ErlWrapper::MakeHandle - INT\n");
     value = Integer::New(_int);
   } else if(enif_get_int64(env, term, &_int64)) {
     value = Integer::New(_int64);
@@ -135,23 +134,22 @@ Local<Value> ErlWrapper::MakeHandle(Vm *vm,
   } else if(enif_get_resource(env, term, VmContextResource, (void **)(&erlVmContext))) {
     value = Local<Value>::New(erlVmContext->vmContext->MakeHandle());
   } else if(enif_get_resource(env, term, JsWrapperResource, (void **)(&erlJsWrapper))) {
-    TRACE("ErlWrapper::MakeHandle - RESOURCE\n");
+    TRACE("RESOURCE\n");
     value = Local<Value>::New(erlJsWrapper->jsWrapper->value);
   } else if(enif_inspect_binary(env, term, &binary)) {
+    TRACE("BINARY\n");
     char *buffer = (char *)malloc((binary.size + 1) * sizeof(char));
     memcpy(buffer, binary.data, binary.size);
     buffer[binary.size] = NULL;
     value = String::New(buffer);
     free(buffer);
   } else if(enif_is_fun(env, term)) {
-    TRACE("ErlWrapper::MakeHandle - FUN\n");
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
     Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
     value = fn->GetFunction();
   } else if(enif_get_list_length(env, term, &_uint)) {
     value = MakeArray(vm, env, _uint, term);
   } else if(enif_get_tuple(env, term, &_int, &terms)) {
-    TRACE("ErlWrapper::MakeHandle - TUPLE\n");
     value = MakeTupleHandle(vm, env, _int, terms);
   } else {
     ErlWrapper *erlWrapper = new ErlWrapper(vm, term);
@@ -212,30 +210,39 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
 
   if(arity == 1) {
     value = MakeWrapper(vm, terms[0]);
-  } else if(arity == 2) {
+  } else {
     unsigned length;
 
     if(enif_get_atom_length(env, terms[0], &length, ERL_NIF_LATIN1)) {
+      TRACE("IS TUPLE\n");
       char *buffer = (char *)malloc((length + 1) * sizeof(char));
 
       if(enif_get_atom(env, terms[0], buffer, length + 1, ERL_NIF_LATIN1)) {
         if(strncmp(buffer, "struct", length) == 0) {
+          TRACE("IS TRACE - 1\n");
           value = MakeObject(vm, env, terms[1]);
         } else if(strncmp(buffer, "mf", length) == 0) {
+          TRACE("IS TRACE - 2\n");
           ErlWrapper *erlWrapper = new ErlWrapper(vm, terms[1]);
           Handle<FunctionTemplate> fn = FunctionTemplate::New(WrapFun, erlWrapper->MakeExternal());
           value = fn->GetFunction();
         } else if(strncmp(buffer, "date", length) == 0) {
+          TRACE("IS TRACE - 3\n");
           value = MakeDate(vm, env, terms[1]);
         } else if(strncmp(buffer, "eval", length) == 0) {
+          TRACE("IS TRACE - 4\n");
           value = MakeEval(vm, env, arity, terms);
         } else if(strncmp(buffer, "set", length) == 0) {
+          TRACE("IS TRACE - 5\n");
           value = MakeSet(vm, env, arity, terms);
         } else if(strncmp(buffer, "get", length) == 0) {
+          TRACE("IS TRACE - 6\n");
           value = MakeGet(vm, env, arity, terms);
         } else if(strncmp(buffer, "call", length) == 0) {
+          TRACE("IS TRACE - 7\n");
           value = MakeCall(vm, env, arity, terms);
         } else {
+          TRACE("IS TRACE - 8\n");
           value = ThrowException(
             Exception::Error(String::New("bad tuple: unrecognized atom")));
         }
@@ -245,34 +252,157 @@ Local<Value> ErlWrapper::MakeTupleHandle(Vm *vm,
       }
 
       free(buffer);
-    } else {
-      value = ThrowException(
-          Exception::Error(String::New("bad tuple")));
     }
   }
 
   return Local<Value>::New(value);
 }
 
+Local<Value> ErlWrapper::MakeEvalRaw(char *originBuffer,
+    int line, int col, char *sourceBuffer) {
+  // TODO: error handling
+  Handle<String> origin = String::New(originBuffer);
+  Handle<String> source = String::New(sourceBuffer);
+  ScriptOrigin scriptOrigin(origin,
+      Integer::New(line),
+      Integer::New(col));
+  Handle<Script> script = Script::Compile(source, &scriptOrigin);
+
+  return script->Run();
+}
+
+Local<Value> ErlWrapper::MakeEvalNoOrigin(Vm *vm,
+    ErlNifEnv *env,
+    ERL_NIF_TERM term) {
+  ErlNifBinary scriptBin;
+  Local<Value> value;
+
+  if(enif_inspect_binary(env, term, &scriptBin)) {
+    char *buffer = Util::BinaryToBuffer(scriptBin);
+
+    value = MakeEvalRaw((char *)"unknown", 0, 0, buffer);
+
+    free(buffer);
+  } else {
+    // TODO: error handling
+  }
+
+  return value;
+}
+
+Local<Value> ErlWrapper::MakeEvalWithOrigin(Vm *vm,
+    ErlNifEnv *env,
+    ERL_NIF_TERM oriTerm,
+    ERL_NIF_TERM lineTerm,
+    ERL_NIF_TERM colTerm,
+    ERL_NIF_TERM term) {
+  int line, col;
+  Local<Value> value;
+  ErlNifBinary oriBin, scriptBin;
+
+  if(enif_inspect_binary(env, oriTerm, &oriBin) &&
+      enif_get_int(env, lineTerm, &line) &&
+      enif_get_int(env, colTerm, &col) &&
+      enif_inspect_binary(env, term, &scriptBin)) {
+    char *oriBuffer = Util::BinaryToBuffer(oriBin);
+    char *scriptBuffer = Util::BinaryToBuffer(scriptBin);
+
+    value = MakeEvalRaw(oriBuffer,
+        line, col, scriptBuffer);
+
+    free(oriBuffer);
+    free(scriptBuffer);
+  } else {
+    // TODO: error handling
+  }
+
+  return value;
+}
+
 Local<Value> ErlWrapper::MakeEval(Vm *vm,
     ErlNifEnv *env,
     int arity,
     const ERL_NIF_TERM *terms) {
-  return Local<Value>::New(Undefined());
+  Local<Value> value;
+
+  if(arity == 2) {
+    value = MakeEvalNoOrigin(vm,
+        env,
+        terms[1]);
+  } else if(arity == 3) {
+    value = MakeEvalWithOrigin(vm,
+        env,
+        terms[1],
+        terms[2],
+        terms[3],
+        terms[4]);
+  } else {
+    // TODO: error handling
+  }
+
+  return value;
+}
+
+Local<Value> ErlWrapper::MakeSetRaw(Local<Value> object,
+    Local<Value> field,
+    Local<Value> fieldValue) {
+  // TODO: error handling
+  object->ToObject()->Set(field->ToObject(),
+      fieldValue);
+
+  return object;
 }
 
 Local<Value> ErlWrapper::MakeSet(Vm *vm,
     ErlNifEnv *env,
     int arity,
     const ERL_NIF_TERM *terms) {
-  return Local<Value>::New(Undefined());
+  TRACE("SSSSSSSSS\n");
+  Local<Value> value;
+
+  if(arity == 4) {
+    TRACE("GOOOOOD\n");
+    Local<Value> object = MakeHandle(vm,
+        env, terms[1]);
+    Local<Value> field = MakeHandle(vm,
+        env, terms[2]);
+    Local<Value> fieldValue = MakeHandle(vm,
+        env, terms[3]);
+
+    value = MakeSetRaw(object, field, fieldValue);
+  } else {
+    TRACE("BAAAAAAAD\n");
+    // TODO: error handling
+  }
+
+  return value;
+}
+
+Local<Value> ErlWrapper::MakeGetRaw(Local<Value> object,
+    Local<Value> field) {
+  // TODO: error handling
+
+  return object->ToObject()->Get(field->ToObject());
 }
 
 Local<Value> ErlWrapper::MakeGet(Vm *vm,
     ErlNifEnv *env,
     int arity,
     const ERL_NIF_TERM *terms) {
-  return Local<Value>::New(Undefined());
+  Local<Value> value;
+
+  if(arity == 3) {
+    Local<Value> object = ErlWrapper::MakeHandle(vm,
+        env, terms[1]);
+    Local<Value> field = ErlWrapper::MakeHandle(vm,
+        env, terms[2]);
+
+    value = MakeGetRaw(object, field);
+  } else {
+    // TODO: error handling
+  }
+
+  return value;
 }
 
 Local<Value> ErlWrapper::MakeCall(Vm *vm,
